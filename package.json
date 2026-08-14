@@ -2,6 +2,7 @@
   "name": "dsh-dafeiyu",
   "version": "0.1.0-alpha.6",
   "description": "A desktop-native BigFish companion driven by DeepSeek Harness session events.",
+  "author": "QCYTSN",
   "type": "module",
   "main": "src/index.js",
   "exports": {
@@ -27,8 +28,15 @@
     "requirements.txt",
     "README.md",
     "README_EN.md",
+    "CHANGELOG.md",
     "ASSET_LICENSE.md",
     "LICENSE"
+  ],
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
   ],
   "engines": {
     "node": ">=22.19"
@@ -62,7 +70,18 @@
     "desktop-pet",
     "agent-companion"
   ],
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/QCYTSN/dsh-dafeiyu.git"
+  },
+  "bugs": {
+    "url": "https://github.com/QCYTSN/dsh-dafeiyu/issues"
+  },
+  "homepage": "https://github.com/QCYTSN/dsh-dafeiyu#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "SEE LICENSE IN ASSET_LICENSE.md",
   "devDependencies": {
     "playwright-core": "^1.62.1"
   }

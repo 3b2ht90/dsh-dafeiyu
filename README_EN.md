@@ -6,7 +6,7 @@
 
 Enabled by DSH, owned by the DSH lifecycle, rendered on the desktop.
 
-[中文](README.md) · [Latest release](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) · [Update and rollback](docs/UPDATING.md) · [Acceptance notes](docs/ACCEPTANCE.md)
+[中文](README.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [Latest release](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) · [Update and rollback](docs/UPDATING.md) · [Acceptance notes](docs/ACCEPTANCE.md)
 
 </div>
 
@@ -72,7 +72,7 @@ When several DSH sessions run at once, the default attention priority is:
 - Windows 10/11 x64
 - A working DeepSeek Harness WebUI installation
 - A DSH CLI that supports `plugin --profile web`
-- A release archive named `dsh-dafeiyu-<version>.tgz`
+- `dsh-dafeiyu@alpha` from npm, or a `.tgz` archive from GitHub Releases
 
 Regular users do **not** need Python or PySide6 and should not launch
 `dsh-dafeiyu-helper.exe` manually. The Windows Helper is bundled in the release archive.
@@ -86,7 +86,27 @@ The current Alpha build uses Simplified Chinese for the settings UI and desktop 
 Stop the DSH Host, not only the browser tab. An old Helper should not remain active during
 installation or upgrade.
 
-### 2. Download the release archive
+### 2. Install with one command
+
+Open PowerShell in your DSH installation directory, for example:
+
+```powershell
+cd D:\DSH
+```
+
+Install the current Alpha from npm:
+
+```powershell
+pnpm exec dsh plugin --profile web add dsh-dafeiyu@alpha
+```
+
+If `dsh` is already available globally, the command is simply:
+
+```powershell
+dsh plugin --profile web add dsh-dafeiyu@alpha
+```
+
+### 3. GitHub Release fallback
 
 Open [GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) and download:
 
@@ -96,24 +116,10 @@ dsh-dafeiyu-<version>.tgz
 
 Do not extract it.
 
-### 3. Add it to the DSH Web profile
-
-Open PowerShell in your DSH installation directory, for example:
-
-```powershell
-cd D:\DSH
-```
-
-Install the downloaded archive:
+Do not extract it. Install the downloaded archive from the DSH directory:
 
 ```powershell
 pnpm exec dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.tgz"
-```
-
-If `dsh` is already available globally, this is equivalent:
-
-```powershell
-dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.tgz"
 ```
 
 ### 4. Start DSH
@@ -174,24 +180,29 @@ DSH persists these settings, so a normal plugin update does not require reconfig
 
 ## Update
 
-An installed plugin does **not** change when new commits appear on GitHub. Wait for a new
-Release archive, fully exit DSH, and install the new `.tgz` with the same command:
+An installed plugin does **not** change when new commits appear on GitHub. After a new version
+is published, fully exit DSH and update the npm Alpha package:
 
 ```powershell
 cd D:\DSH
+pnpm exec dsh plugin --profile web update dsh-dafeiyu@alpha
+```
+
+Running the install command again also resolves the newest version behind the `alpha` tag:
+
+```powershell
+pnpm exec dsh plugin --profile web add dsh-dafeiyu@alpha
+```
+
+Users who installed from GitHub Releases can download the new `.tgz` and install it over the
+old version:
+
+```powershell
 pnpm exec dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<new-version>.tgz"
 ```
 
-This replaces the plugin and bundled Windows Helper while retaining settings saved by DSH.
-
-If the package is published to npm in the future, the update command can become:
-
-```powershell
-pnpm exec dsh plugin --profile web update dsh-dafeiyu
-```
-
-During the Alpha phase, installing the newer GitHub Release `.tgz` is the supported update
-path. See [Update and rollback](docs/UPDATING.md) for details.
+All three paths replace the plugin and bundled Windows Helper while retaining settings saved
+by DSH. See [Update and rollback](docs/UPDATING.md) for details.
 
 ## Roll back
 

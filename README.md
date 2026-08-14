@@ -6,7 +6,7 @@
 
 入口属于 DSH，生命周期属于 DSH，显示层属于桌面。
 
-[English](README_EN.md) · [下载最新版本](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) · [更新与回退](docs/UPDATING.md) · [验收记录](docs/ACCEPTANCE.md)
+[English](README_EN.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [下载最新版本](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) · [更新与回退](docs/UPDATING.md) · [验收记录](docs/ACCEPTANCE.md)
 
 </div>
 
@@ -71,7 +71,7 @@ stateDiagram-v2
 - Windows 10/11 x64
 - 已安装并能正常运行的 DeepSeek Harness WebUI
 - DSH CLI 中可以使用 `plugin --profile web` 命令
-- 安装包文件：`dsh-dafeiyu-<version>.tgz`
+- npm 上的 `dsh-dafeiyu@alpha`，或 GitHub Release 中的 `.tgz` 安装包
 
 普通用户**不需要**安装 Python、PySide6 或单独运行
 `dsh-dafeiyu-helper.exe`。Windows Helper 已经包含在发布包里。
@@ -84,7 +84,27 @@ stateDiagram-v2
 
 先关闭 DSH Host，而不只是关闭浏览器标签页。安装或更新时不要让旧版插件继续运行。
 
-### 2. 下载发布包
+### 2. 一行命令安装
+
+在 PowerShell 中进入你的 DSH 安装目录，例如：
+
+```powershell
+cd D:\DSH
+```
+
+然后从 npm 安装当前 Alpha：
+
+```powershell
+pnpm exec dsh plugin --profile web add dsh-dafeiyu@alpha
+```
+
+如果你的系统已经能直接使用全局 `dsh` 命令，只需要：
+
+```powershell
+dsh plugin --profile web add dsh-dafeiyu@alpha
+```
+
+### 3. GitHub Release 备用安装方式
 
 进入 [GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest)，下载最新的：
 
@@ -94,24 +114,10 @@ dsh-dafeiyu-<version>.tgz
 
 不要解压这个文件。
 
-### 3. 安装到 DSH Web profile
-
-在 PowerShell 中进入你的 DSH 安装目录，例如：
-
-```powershell
-cd D:\DSH
-```
-
-然后安装下载的插件包：
+不解压，在 DSH 目录中直接安装下载的插件包：
 
 ```powershell
 pnpm exec dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.tgz"
-```
-
-如果你的系统已经能直接使用全局 `dsh` 命令，也可以运行：
-
-```powershell
-dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.tgz"
 ```
 
 ### 4. 启动 DSH
@@ -171,24 +177,28 @@ dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.tgz"
 
 ## 更新插件
 
-GitHub 仓库出现新提交后，已经安装的插件**不会自动变化**。请等待新的 Release 包，
-完全退出 DSH，然后对新 `.tgz` 再执行一次安装命令：
+GitHub 仓库出现新提交后，已经安装的插件**不会自动变化**。新版本发布后，完全退出
+DSH，然后更新 npm Alpha 包：
 
 ```powershell
 cd D:\DSH
+pnpm exec dsh plugin --profile web update dsh-dafeiyu@alpha
+```
+
+也可以再次执行安装命令，它会解析 `alpha` 标签指向的新版本：
+
+```powershell
+pnpm exec dsh plugin --profile web add dsh-dafeiyu@alpha
+```
+
+使用 GitHub Release 安装的用户，可以下载新 `.tgz` 后覆盖安装：
+
+```powershell
 pnpm exec dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<new-version>.tgz"
 ```
 
-这会替换旧版插件及随包携带的 Windows Helper，并保留 DSH 中已经保存的设置。
-
-如果未来通过 npm 发布，可以改用：
-
-```powershell
-pnpm exec dsh plugin --profile web update dsh-dafeiyu
-```
-
-当前 Alpha 阶段以 GitHub Release 的 `.tgz` 覆盖更新为准。详细说明见
-[插件更新与回退](docs/UPDATING.md)。
+以上方式都会替换插件及随包携带的 Windows Helper，并保留 DSH 已保存的设置。详细
+说明见 [插件更新与回退](docs/UPDATING.md)。
 
 ## 回退到旧版本
 
