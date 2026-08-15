@@ -111,7 +111,7 @@ def run_headless(recorder: EventRecorder) -> int:
 
 def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> int:
     try:
-        from PySide6.QtCore import QObject, QPoint, Qt, QTimer, Signal
+        from PySide6.QtCore import QObject, QPoint, Qt, QTimer, Signal, QRectF
         from PySide6.QtGui import QColor, QFont, QFontMetrics, QMouseEvent, QPainter, QPen, QPixmap
         from PySide6.QtWidgets import QApplication, QMenu, QWidget
     except ImportError:
@@ -187,9 +187,15 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             self.window_origin: QPoint | None = None
             self.dragging = False
             self.last_tick_ms = self._now_ms()
+            # 交叉淡化状态：clip 切换时把旧帧淡出
+            self.fade_from_pixmap: QPixmap | None = None
+            self.fade_started = 0.0
+            self.fade_duration = 0.15
+            self.last_clip_name = self.model.active_clip_name
+            self.last_frame_name = self.model.frame
             self.animation_timer = QTimer(self)
             self.animation_timer.timeout.connect(self._tick)
-            self.animation_timer.start(40)
+            self.animation_timer.start(20)
             self.micro_timer = QTimer(self)
             self.micro_timer.setSingleShot(True)
             self.micro_timer.timeout.connect(self._play_idle_micro)
@@ -267,6 +273,21 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             had_pulse = self.model.pulse_state is not None
             model_elapsed = 0 if self.reduced_motion and self.model.active_clip.loop else elapsed_ms
             self.model.advance(model_elapsed, now_ms)
+            # 帧切换溶解：clip 切换 100ms，帧切换 45ms
+            # 表情类小动作（眨眼/左右看）不溶解——脸部细节硬切更清晰，溶解会糊
+            EXPRESSION_CLIPS = {"blink", "glance"}
+            frame_name = self.model.frame
+            if frame_name != self.last_frame_name:
+                clip_changed = self.model.active_clip_name != self.last_clip_name
+                cur_clip = self.model.active_clip_name
+                if cur_clip in EXPRESSION_CLIPS or self.last_clip_name in EXPRESSION_CLIPS:
+                    self.fade_from_pixmap = None
+                else:
+                    self.fade_from_pixmap = self.pixmaps.get(self.last_frame_name)
+                    self.fade_started = time.monotonic()
+                    self.fade_duration = 0.10 if clip_changed else 0.045
+                self.last_clip_name = self.model.active_clip_name
+                self.last_frame_name = frame_name
             if had_pulse and self.model.pulse_state is None:
                 self.display_state = self.model.base_state
             if self.overlay_deadline_ms is not None and now_ms >= self.overlay_deadline_ms:
@@ -417,6 +438,8 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
         def paintEvent(self, _event: Any) -> None:
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            # 平滑缩放：放大/缩小时插值，避免锯齿和模糊
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
             card = self._current_card()
             bubble_height = 104 if card else 12
             if card:
@@ -477,32 +500,75 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             pixmap = self.pixmaps[self.model.frame]
             phase = time.monotonic()
             motion = self.model.active_clip.motion
-            offset_x = 0
-            offset_y = 0
             if self.reduced_motion:
                 motion = None
+            scale_extra = 1.0
+            angle = 0.0
+            offset_x = 0
+            offset_y = 0
+            clip_name = self.model.active_clip_name
             if motion == "breathe":
-                offset_y = round(math.sin(phase * 2.1) * 2)
+                # 独立版同款：缩放呼吸 + 轻摇摆（无位移）
+                scale_extra = 1.0 + 0.02 * math.sin(phase * 2.5)
+                angle = math.sin(phase * 2.5) * 1.5
             elif motion == "think":
-                offset_y = round(math.sin(phase * 2.8) * 3)
+                offset_y = math.sin(phase * 2.8) * 3
+                angle = math.sin(phase * 1.3) * 0.8
             elif motion == "work":
-                offset_x = round(math.sin(phase * 5.4) * 2)
+                offset_x = math.sin(phase * 5.4) * 3
+                angle = math.sin(phase * 3.1) * 1.0
             elif motion == "wait":
-                offset_y = round(math.sin(phase * 1.8) * 2)
+                offset_y = math.sin(phase * 1.8) * 1
+                angle = math.sin(phase * 1.2) * 0.8
             elif motion == "bounce":
-                offset_y = -round(abs(math.sin(phase * 5.2)) * 8)
+                offset_y = -abs(math.sin(phase * 5.2)) * 8
+                scale_extra = 1.0 + 0.02 * math.sin(phase * 5.2)
             elif motion in {"shake", "dizzy"}:
-                offset_x = round(math.sin(phase * 11.0) * 4)
+                offset_x = math.sin(phase * 11.0) * 4
+                angle = math.sin(phase * 11.0) * 1.5
             elif motion == "float":
-                offset_y = round(math.sin(phase * 3.0) * 4)
+                offset_y = math.sin(phase * 3.0) * 4
+                angle = math.sin(phase * 1.6) * 1.0
+            # 走路帧序列：独立版同款 bob（-abs sin）+ 快频摇摆
+            if clip_name in ("working_search", "working_command"):
+                offset_y = -abs(math.sin(phase * 4.5)) * 5
+                angle = math.sin(phase * 9.0) * 2.5
 
-            pixmap_width = round(pixmap.width() * self.scale)
-            pixmap_height = round(pixmap.height() * self.scale)
-            x = (self.width() - pixmap_width) // 2 + offset_x
-            y = self.height() - pixmap_height - 8 + offset_y
-            if bubble_height > y:
-                y = bubble_height
-            painter.drawPixmap(x, y, pixmap_width, pixmap_height, pixmap)
+            # 位移随角色大小缩放，保持动作幅度观感一致（浮点，不取整防台阶）
+            offset_x = offset_x * self.scale
+            offset_y = offset_y * self.scale
+
+            # 溶解进度：前段加速（指数 <1），过渡更干脆、无定格感
+            fade_alpha = 1.0
+            if self.fade_from_pixmap is not None and not self.fade_from_pixmap.isNull():
+                fade_elapsed = time.monotonic() - self.fade_started
+                if fade_elapsed < self.fade_duration:
+                    fade_alpha = min(1.0, (fade_elapsed / self.fade_duration) ** 0.7)
+                else:
+                    self.fade_from_pixmap = None
+
+            def draw_pet(pix: QPixmap, alpha: float) -> None:
+                pw = pix.width() * self.scale * scale_extra
+                ph = pix.height() * self.scale * scale_extra
+                x = (self.width() - pw) / 2 + offset_x
+                y = self.height() - ph - 8 + offset_y
+                if bubble_height > y:
+                    y = bubble_height
+                cx = x + pw / 2
+                cy = y + ph / 2
+                painter.save()
+                painter.setOpacity(alpha)
+                painter.translate(cx, cy)
+                painter.rotate(angle)
+                painter.translate(-cx, -cy)
+                # 浮点坐标绘制：小幅度运动平滑无台阶
+                painter.drawPixmap(QRectF(x, y, pw, ph), pix, QRectF(0, 0, pix.width(), pix.height()))
+                painter.restore()
+
+            if fade_alpha < 1.0 and self.fade_from_pixmap is not None:
+                # 旧帧全不透明打底，新帧渐入覆盖：整体不透明度恒定，不会透背景闪烁
+                draw_pet(self.fade_from_pixmap, 1.0)
+            draw_pet(pixmap, fade_alpha)
 
         def mousePressEvent(self, event: QMouseEvent) -> None:
             if event.button() == Qt.MouseButton.LeftButton:
