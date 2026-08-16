@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.1.0-alpha.7
+
+Animation and live-settings refinement release.
+
+### Highlights
+
+- 50 FPS standard rendering with 25 FPS retained for reduced-motion mode
+- Subpixel positioning and smooth pixmap transforms for less stepped movement
+- Short, non-flashing crossfades between larger pose and animation-frame changes
+- Light procedural bob, sway, rotation, and breathing motion
+- Multi-frame actions run roughly 10% faster while retaining readable character acting
+- Independent live controls for character and status-card scale without restarting the Helper
+- Live subagent preference changes preserve the active top-level project state
+
+### Update
+
+Fully exit DSH, then run:
+
+```powershell
+dsh plugin --profile web update dsh-dafeiyu@alpha
+```
+
+For a local DSH installation, run the equivalent command from its directory:
+
+```powershell
+pnpm exec dsh plugin --profile web update dsh-dafeiyu@alpha
+```
+
+Restart DSH after the update. Whole-package hot replacement is not supported by the current
+DSH Host; live configuration changes remain available without restarting.
+
 ## 0.1.0-alpha.6
 
 First public Windows Alpha of DSH BigFish / DSH 大肥鱼.

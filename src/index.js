@@ -174,7 +174,7 @@ function mount(ctx, config = {}, eventCtx = ctx) {
     bridge.send(createMessage(CompanionMessageKind.HELLO, {
       state: CompanionState.IDLE,
       host: 'deepseek-harness',
-      pluginVersion: '0.1.0-alpha.6',
+      pluginVersion: '0.1.0-alpha.7',
       message: 'BigFish connected to DSH',
     }))
     bridge.send(createMessage(CompanionMessageKind.STATE, {
