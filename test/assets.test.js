@@ -50,3 +50,24 @@ test('pet manifest allowlists every bundled runtime frame', async () => {
   for (const clip of Object.values(manifest.workingActivityMap)) assert.ok(manifest.clips[clip])
   for (const clip of manifest.idleMicroClips) assert.ok(manifest.clips[clip])
 })
+
+test('multi-frame clips keep the mildly accelerated motion timing', async () => {
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+  const expectedFrameMs = {
+    blink: 100,
+    glance: 160,
+    working_search: 135,
+    working_command: 135,
+    walk_start_left: 118,
+    walk_stop_left: 135,
+    walk_start_right: 118,
+    walk_stop_right: 135,
+    head_pat: 180,
+    poke: 170,
+    tail: 220,
+  }
+
+  for (const [clipName, frameMs] of Object.entries(expectedFrameMs)) {
+    assert.equal(manifest.clips[clipName].frameMs, frameMs, `${clipName} motion timing drifted`)
+  }
+})
