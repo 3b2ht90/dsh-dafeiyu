@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.0-alpha.9
+
+Windows drag-stability hotfix release.
+
+### Fixed
+
+- Removed procedural floating motion from the single-frame dragging pose
+- Switched into and out of the dragging pose atomically instead of crossfading through an already-painted frame
+- Paused animation and idle-micro timers while dragging so timer repaints no longer compete with Windows mouse-move repaints
+- Restored the latest live Agent state immediately after release, including state changes received during the drag ([#10](https://github.com/QCYTSN/dsh-dafeiyu/issues/10))
+
+### Validation
+
+- Added regression coverage for drag transitions, live state updates during dragging, and the stable dragging asset contract
+- Rebuilt the Windows x64 Helper and passed its packaged Qt visual smoke test
+- Completed five consecutive native-window drag/release cycles without a crash or stale dragging state
+
+### Update
+
+Fully exit DSH, then run:
+
+```powershell
+dsh plugin --profile web update dsh-dafeiyu@alpha
+```
+
+Restart DSH after the update. The current DSH Host does not support replacing the whole plugin package while it is still running.
+
 ## 0.1.0-alpha.8
 
 Packaging and DSH event-state hotfix release.
