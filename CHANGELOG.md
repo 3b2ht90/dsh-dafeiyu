@@ -1,6 +1,37 @@
 # Changelog
 
+## 0.1.0-alpha.8
+
+Packaging and DSH event-state hotfix release.
+
+### Fixed
+
+- Restored the Windows visual Helper after `0.1.0-alpha.7` was published without PySide6/Qt
+- Stopped thinking-card copy from changing on every streamed assistant chunk ([#5](https://github.com/QCYTSN/dsh-dafeiyu/issues/5))
+- Added real DSH `tool/result` call-ID paths so completed tools no longer leave stale working stages ([#6](https://github.com/QCYTSN/dsh-dafeiyu/issues/6))
+- Added a dedicated waiting state for `ask_user_question`, `request_user_input`, and equivalent user-question tools ([#6](https://github.com/QCYTSN/dsh-dafeiyu/issues/6))
+
+### Release safeguards
+
+- The Windows build now fails before packaging unless the selected Python can import both PyInstaller and PySide6
+- Every packaged Helper must start, complete the protocol handshake, render a real Qt snapshot with bundled assets, and shut down cleanly
+- The public incident and resolution are tracked in [#7](https://github.com/QCYTSN/dsh-dafeiyu/issues/7)
+
+### Update
+
+Fully exit DSH, then run:
+
+```powershell
+dsh plugin --profile web update dsh-dafeiyu@alpha
+```
+
+Restart DSH after the update. Existing `0.1.0-alpha.7` users should update directly to this version.
+
 ## 0.1.0-alpha.7
+
+> **Known broken release:** the published Windows Helper omitted PySide6/Qt. The WebUI settings
+> panel loads, but the desktop companion cannot appear. Use `0.1.0-alpha.6` or update to
+> `0.1.0-alpha.8`. See [#7](https://github.com/QCYTSN/dsh-dafeiyu/issues/7).
 
 Animation and live-settings refinement release.
 

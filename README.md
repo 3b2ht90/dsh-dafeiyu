@@ -6,7 +6,7 @@
 
 入口属于 DSH，生命周期属于 DSH，显示层属于桌面。
 
-[English](README_EN.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [下载最新版本](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) · [更新与回退](docs/UPDATING.md) · [验收记录](docs/ACCEPTANCE.md)
+[English](README_EN.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [下载最新版本](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) · [更新日志](CHANGELOG.md) · [更新与回退](docs/UPDATING.md) · [验收记录](docs/ACCEPTANCE.md)
 
 </div>
 
