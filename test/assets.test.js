@@ -71,3 +71,9 @@ test('multi-frame clips keep the mildly accelerated motion timing', async () => 
     assert.equal(manifest.clips[clipName].frameMs, frameMs, `${clipName} motion timing drifted`)
   }
 })
+
+test('dragging uses one stable frame without procedural motion', async () => {
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+  assert.deepEqual(manifest.clips.dragging.frames, ['dragging/dragging_238.png'])
+  assert.equal(manifest.clips.dragging.motion, undefined)
+})

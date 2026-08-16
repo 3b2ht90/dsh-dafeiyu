@@ -2,7 +2,7 @@ import json
 import unittest
 from pathlib import Path
 
-from runtime.animation_model import AnimationModel
+from runtime.animation_model import AnimationModel, crossfade_duration
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,6 +41,22 @@ class AnimationModelTests(unittest.TestCase):
         model.apply_state("THINKING")
         self.assertFalse(model.play_idle_micro())
         self.assertEqual(model.active_clip_name, "thinking")
+
+    def test_drag_overlay_returns_to_latest_agent_state(self) -> None:
+        model = AnimationModel(MANIFEST)
+        model.apply_state("THINKING")
+        self.assertTrue(model.play_overlay("dragging"))
+        model.apply_state("WAITING")
+        model.clear_overlay()
+        self.assertEqual(model.active_clip_name, "waiting")
+        self.assertEqual(model.base_state, "WAITING")
+
+    def test_drag_transitions_never_crossfade(self) -> None:
+        self.assertIsNone(crossfade_duration("idle", "dragging"))
+        self.assertIsNone(crossfade_duration("dragging", "thinking"))
+        self.assertIsNone(crossfade_duration("blink", "idle"))
+        self.assertEqual(crossfade_duration("thinking", "working"), 0.10)
+        self.assertEqual(crossfade_duration("working_search", "working_search"), 0.045)
 
 
 if __name__ == "__main__":

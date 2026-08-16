@@ -19,10 +19,10 @@ from pathlib import Path
 from typing import Any, TextIO
 
 try:
-    from .animation_model import AnimationModel
+    from .animation_model import AnimationModel, crossfade_duration
     from .layout_store import default_layout_path, load_layout, save_layout
 except ImportError:
-    from animation_model import AnimationModel
+    from animation_model import AnimationModel, crossfade_duration
     from layout_store import default_layout_path, load_layout, save_layout
 
 
@@ -201,8 +201,6 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             self.fade_from_pixmap: QPixmap | None = None
             self.fade_started = 0.0
             self.fade_duration = 0.15
-            self.last_clip_name = self.model.active_clip_name
-            self.last_frame_name = self.model.frame
             self.animation_timer = QTimer(self)
             self.animation_timer.timeout.connect(self._tick)
             self.animation_timer.start(40 if self.reduced_motion else 20)
@@ -228,6 +226,8 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             if kind == "shutdown":
                 QApplication.quit()
                 return
+            previous_frame = self.model.frame
+            previous_clip = self.model.active_clip_name
             if kind == "task":
                 self.task = str(message.get("task", ""))
                 self._show_status(
@@ -274,6 +274,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                         state,
                         None if persistent else 4200,
                     )
+            self._sync_frame_transition(previous_frame, previous_clip)
             self.update()
             if snapshot_path is not None and not self.snapshot_saved:
                 QTimer.singleShot(180, self._save_snapshot)
@@ -308,22 +309,11 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             elapsed_ms = max(0, now_ms - self.last_tick_ms)
             self.last_tick_ms = now_ms
             had_pulse = self.model.pulse_state is not None
+            previous_frame = self.model.frame
+            previous_clip = self.model.active_clip_name
             model_elapsed = 0 if self.reduced_motion and self.model.active_clip.loop else elapsed_ms
             self.model.advance(model_elapsed, now_ms)
-            # Preserve crisp facial expressions; soften larger pose and frame changes.
-            EXPRESSION_CLIPS = {"blink", "glance"}
-            frame_name = self.model.frame
-            if frame_name != self.last_frame_name:
-                clip_changed = self.model.active_clip_name != self.last_clip_name
-                cur_clip = self.model.active_clip_name
-                if cur_clip in EXPRESSION_CLIPS or self.last_clip_name in EXPRESSION_CLIPS:
-                    self.fade_from_pixmap = None
-                else:
-                    self.fade_from_pixmap = self.pixmaps.get(self.last_frame_name)
-                    self.fade_started = time.monotonic()
-                    self.fade_duration = 0.10 if clip_changed else 0.045
-                self.last_clip_name = self.model.active_clip_name
-                self.last_frame_name = frame_name
+            self._sync_frame_transition(previous_frame, previous_clip)
             if had_pulse and self.model.pulse_state is None:
                 self.display_state = self.model.base_state
             if self.overlay_deadline_ms is not None and now_ms >= self.overlay_deadline_ms:
@@ -333,8 +323,70 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
         def _play_idle_micro(self) -> None:
             if self.reduced_motion:
                 return
+            previous_frame = self.model.frame
+            previous_clip = self.model.active_clip_name
             self.model.play_idle_micro(random.randrange(max(1, len(self.model.idle_micro_clips))))
+            self._sync_frame_transition(previous_frame, previous_clip)
+            self.update()
             self._schedule_micro()
+
+        def _sync_frame_transition(
+            self,
+            previous_frame: str,
+            previous_clip: str,
+            *,
+            allow_fade: bool = True,
+        ) -> None:
+            current_frame = self.model.frame
+            if current_frame == previous_frame:
+                return
+            duration = crossfade_duration(previous_clip, self.model.active_clip_name) if allow_fade else None
+            if duration is None:
+                self.fade_from_pixmap = None
+                return
+            self.fade_from_pixmap = self.pixmaps.get(previous_frame)
+            self.fade_started = time.monotonic()
+            self.fade_duration = duration
+
+        def _play_model_overlay(
+            self,
+            clip_name: str,
+            *,
+            allow_fade: bool = True,
+            repaint: bool = True,
+        ) -> bool:
+            previous_frame = self.model.frame
+            previous_clip = self.model.active_clip_name
+            if not self.model.play_overlay(clip_name):
+                return False
+            self._sync_frame_transition(previous_frame, previous_clip, allow_fade=allow_fade)
+            if repaint:
+                self.update()
+            return True
+
+        def _begin_drag(self) -> None:
+            if self.dragging:
+                return
+            self.dragging = True
+            self.animation_timer.stop()
+            self.micro_timer.stop()
+            self._play_model_overlay("dragging", allow_fade=False, repaint=False)
+
+        def _finish_drag(self) -> None:
+            if not self.dragging:
+                return
+            now_ms = self._now_ms()
+            previous_frame = self.model.frame
+            previous_clip = self.model.active_clip_name
+            # Expire an underlying pulse before revealing it after a long drag.
+            self.model.advance(0, now_ms)
+            self.model.clear_overlay()
+            self._sync_frame_transition(previous_frame, previous_clip, allow_fade=False)
+            self.dragging = False
+            self.last_tick_ms = now_ms
+            self.animation_timer.start(40 if self.reduced_motion else 20)
+            if not self.reduced_motion:
+                self._schedule_micro()
 
         def _schedule_micro(self) -> None:
             if self.reduced_motion:
@@ -709,15 +761,14 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
         def mouseMoveEvent(self, event: QMouseEvent) -> None:
             if self.drag_origin is not None and self.pet_origin is not None:
                 if not self.dragging and (event.globalPosition().toPoint() - self.drag_origin).manhattanLength() > 5:
-                    self.dragging = True
-                    self.model.play_overlay("dragging")
+                    self._begin_drag()
                 delta = event.globalPosition().toPoint() - self.drag_origin
                 self._move_to_pet(self.pet_origin.x() + delta.x(), self.pet_origin.y() + delta.y())
 
         def mouseReleaseEvent(self, event: QMouseEvent) -> None:
             if event.button() == Qt.MouseButton.LeftButton:
                 if self.dragging:
-                    self.model.clear_overlay()
+                    self._finish_drag()
                     self._move_to_pet(self.pet_x, self.pet_y)
                     self._save_layout()
                 else:
@@ -731,18 +782,18 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             relative_x = max(0.0, x - pet_x)
             relative_y = max(0.0, y - pet_y)
             if relative_y < pet_height * 0.45:
-                self.model.play_overlay("head_pat")
+                self._play_model_overlay("head_pat")
                 self._show_overlay("摸摸也不能让我少干活哦~", self.status_detail, self.status_state, 1800)
             elif relative_x > pet_width * 0.72:
-                self.model.play_overlay("tail")
+                self._play_model_overlay("tail")
                 self._show_overlay("尾巴不是进度条啦！", self.status_detail, self.status_state, 1500)
             else:
-                self.model.play_overlay("poke")
+                self._play_model_overlay("poke")
                 self._show_overlay("戳我干嘛，任务还在跑呢", self.status_detail, self.status_state, 1500)
 
         def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
             if event.button() == Qt.MouseButton.LeftButton:
-                self.model.play_overlay("head_pat")
+                self._play_model_overlay("head_pat")
                 self._show_overlay("好啦好啦，知道你喜欢我~", self.status_detail, self.status_state, 1800)
 
         def contextMenuEvent(self, event: Any) -> None:

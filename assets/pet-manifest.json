@@ -20,7 +20,7 @@
     "success": { "frames": ["happy/happy_238.png"], "frameMs": 180, "loop": true, "motion": "bounce" },
     "error": { "frames": ["angry/angry_238.png"], "frameMs": 180, "loop": true, "motion": "shake" },
     "error_dizzy": { "frames": ["dizzy/dizzy_238.png"], "frameMs": 180, "loop": true, "motion": "dizzy" },
-    "dragging": { "frames": ["dragging/dragging_238.png"], "frameMs": 180, "loop": true, "motion": "float" },
+    "dragging": { "frames": ["dragging/dragging_238.png"], "frameMs": 180, "loop": true },
     "head_pat": { "frames": ["head_pat/head_pat_238_00.png", "head_pat/head_pat_238_01.png", "head_pat/head_pat_238_02.png", "head_pat/head_pat_238_03.png", "head_pat/head_pat_238_04.png", "head_pat/head_pat_238_05.png"], "frameMs": 180, "loop": false },
     "poke": { "frames": ["poke_react/poke_react_238_00.png", "poke_react/poke_react_238_01.png", "poke_react/poke_react_238_02.png", "poke_react/poke_react_238_03.png"], "frameMs": 170, "loop": false },
     "tail": { "frames": ["tail_react/tail_react_238_00.png", "tail_react/tail_react_238_01.png", "tail_react/tail_react_238_02.png", "tail_react/tail_react_238_03.png"], "frameMs": 220, "loop": false }
