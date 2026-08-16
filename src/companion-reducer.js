@@ -28,6 +28,24 @@ function toolActivity(name) {
   return 'using-tool'
 }
 
+function toolCallIdOf(event, fallback = '') {
+  const content = event?.data?.message?.content
+  const contentCallId = Array.isArray(content)
+    ? content.find((item) => item?.toolCallId)?.toolCallId
+    : undefined
+  return String(event?.data?.message?.source?.callId
+    ?? contentCallId
+    ?? event?.data?.message?.toolCallId
+    ?? event?.data?.message?.callId
+    ?? event?.data?.callId
+    ?? fallback)
+}
+
+function isUserQuestionTool(name) {
+  const value = String(name || '').toLowerCase()
+  return /ask.*user.*question|request.*user.*input|user[-_/.:]?questions?/u.test(value)
+}
+
 function sessionIdOf(session) {
   return String(session?.header?.id ?? session?.id ?? 'unknown-session')
 }
@@ -116,6 +134,7 @@ export class CompanionReducer {
       case 'turn/start':
         record.turnActive = true
         record.openTools.clear()
+        record.waitingCallId = undefined
         record.task = undefined
         record.progress = undefined
         this.#update(record, CompanionState.THINKING, {
@@ -129,18 +148,29 @@ export class CompanionReducer {
       case 'assistant/chunk':
       case 'assistant/message':
         if (!record.turnActive || record.openTools.size > 0) return []
+        if (record.state === CompanionState.THINKING && record.payload.phase === 'thinking') return []
         this.#update(record, CompanionState.THINKING, {
-          phase: event.type,
+          phase: 'thinking',
           stage: '分析阶段',
           message: statusCopy('thinking', event.seq),
         })
         return this.#render()
 
       case 'tool/call': {
-        const callId = String(event.data?.callId ?? `seq-${String(event.seq ?? 'unknown')}`)
-        const name = String(event.data?.name ?? 'tool')
-        const activity = toolActivity(name)
+        const callId = toolCallIdOf(event, `seq-${String(event.seq ?? 'unknown')}`)
+        const name = String(event.data?.name ?? event.data?.message?.name ?? 'tool')
         record.openTools.set(callId, name)
+        if (isUserQuestionTool(name)) {
+          record.waitingCallId = callId
+          this.#update(record, CompanionState.WAITING, {
+            phase: 'user-question',
+            stage: '等待确认',
+            toolName: name,
+            message: statusCopy('waiting', event.seq),
+          })
+          return this.#render()
+        }
+        const activity = toolActivity(name)
         this.#update(record, CompanionState.WORKING, {
           phase: 'tool-call',
           activity,
@@ -153,6 +183,9 @@ export class CompanionReducer {
 
       case 'tool/result':
         return this.#toolResult(record, event)
+
+      case 'user/message':
+        return this.#userMessage(record, event)
 
       case 'todo/write':
         return this.#todo(record, event)
@@ -173,11 +206,23 @@ export class CompanionReducer {
   }
 
   #toolResult(record, event) {
-    const callId = String(event.data?.message?.toolCallId
-      ?? event.data?.message?.callId
-      ?? event.data?.callId
-      ?? '')
+    const callId = toolCallIdOf(event)
     if (callId) record.openTools.delete(callId)
+    if (callId && callId === record.waitingCallId) record.waitingCallId = undefined
+    return this.#resumeAfterTool(record, event)
+  }
+
+  #userMessage(record, event) {
+    if (!record.waitingCallId) return []
+    record.openTools.delete(record.waitingCallId)
+    record.waitingCallId = undefined
+    return this.#resumeAfterTool(record, event)
+  }
+
+  #resumeAfterTool(record, event) {
+    if (record.waitingCallId && record.openTools.has(record.waitingCallId)) {
+      return this.#render()
+    }
     const next = record.openTools.size > 0 ? CompanionState.WORKING : CompanionState.THINKING
     const nextPayload = {
       phase: 'tool-result',
@@ -244,6 +289,7 @@ export class CompanionReducer {
   #turnEnd(record, event) {
     record.turnActive = false
     record.openTools.clear()
+    record.waitingCallId = undefined
     const kind = String(event.data?.reason?.kind ?? 'completed')
 
     if (kind === 'blocked') {
@@ -310,6 +356,7 @@ export class CompanionReducer {
       payload: { phase: 'session-created', message: 'DSH 空闲中' },
       turnActive: false,
       openTools: new Map(),
+      waitingCallId: undefined,
       task: undefined,
       progress: undefined,
       project: undefined,
@@ -381,4 +428,4 @@ export class CompanionReducer {
   }
 }
 
-export { statePriority, toolActivity }
+export { isUserQuestionTool, statePriority, toolActivity, toolCallIdOf }

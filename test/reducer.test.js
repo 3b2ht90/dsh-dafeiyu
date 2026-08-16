@@ -38,6 +38,73 @@ test('turn and tool events produce stable companion states', () => {
   assert.equal(complete.resumeState, CompanionState.IDLE)
 })
 
+test('assistant chunks keep one stable thinking message within the same phase', () => {
+  const reducer = new CompanionReducer()
+  reducer.handle(session, event('turn/start', { turn: 1 }, 1))
+
+  const [thinking] = reducer.handle(session, event('assistant/chunk', {
+    message: { content: '第一段' },
+  }, 2))
+  assert.equal(thinking.state, CompanionState.THINKING)
+  assert.equal(thinking.phase, 'thinking')
+
+  assert.deepEqual(reducer.handle(session, event('assistant/chunk', {
+    message: { content: '第二段' },
+  }, 3)), [])
+  assert.deepEqual(reducer.handle(session, event('assistant/message', {
+    message: { content: '完整消息' },
+  }, 4)), [])
+})
+
+test('real DSH tool result callId paths clear completed tools', () => {
+  const reducer = new CompanionReducer()
+  reducer.handle(session, event('turn/start', { turn: 1 }, 1))
+  reducer.handle(session, event('tool/call', { callId: 'source-call', name: 'read_file' }, 2))
+
+  const [afterSourceResult] = reducer.handle(session, event('tool/result', {
+    message: { source: { callId: 'source-call' } },
+  }, 3))
+  assert.equal(afterSourceResult.state, CompanionState.THINKING)
+
+  reducer.handle(session, event('tool/call', { callId: 'content-call', name: 'shell_command' }, 4))
+  const [afterContentResult] = reducer.handle(session, event('tool/result', {
+    message: { content: [{ type: 'tool-result', toolCallId: 'content-call' }] },
+  }, 5))
+  assert.equal(afterContentResult.state, CompanionState.THINKING)
+})
+
+test('question tools show waiting and resume on result or user response', () => {
+  const reducer = new CompanionReducer()
+  reducer.handle(session, event('turn/start', { turn: 1 }, 1))
+
+  const [waitingForResult] = reducer.handle(session, event('tool/call', {
+    callId: 'question-one',
+    name: 'ask_user_question',
+  }, 2))
+  assert.equal(waitingForResult.state, CompanionState.WAITING)
+  assert.equal(waitingForResult.stage, '等待确认')
+
+  assert.deepEqual(reducer.handle(session, event('tool/result', {
+    message: { source: { callId: 'unrelated-call' } },
+  }, 3)), [])
+
+  const [resumedFromResult] = reducer.handle(session, event('tool/result', {
+    message: { source: { callId: 'question-one' } },
+  }, 4))
+  assert.equal(resumedFromResult.state, CompanionState.THINKING)
+
+  const [waitingForUser] = reducer.handle(session, event('tool/call', {
+    callId: 'question-two',
+    name: 'request_user_input',
+  }, 5))
+  assert.equal(waitingForUser.state, CompanionState.WAITING)
+
+  const [resumedFromUser] = reducer.handle(session, event('user/message', {
+    message: { content: '继续' },
+  }, 6))
+  assert.equal(resumedFromUser.state, CompanionState.THINKING)
+})
+
 test('tool failure pulses error without losing the underlying work state', () => {
   const reducer = new CompanionReducer()
   reducer.handle(session, event('turn/start', { turn: 1 }, 1))
