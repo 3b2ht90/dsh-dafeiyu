@@ -13,7 +13,10 @@ DEFAULT_LAYOUT: dict[str, Any] = {
     "version": 1,
     "x": None,
     "y": None,
+    "petX": None,
+    "petY": None,
     "scale": 1.0,
+    "bubbleScale": 1.0,
     "reducedMotion": False,
 }
 
@@ -35,13 +38,16 @@ def normalise_layout(value: Any) -> dict[str, Any]:
     layout = dict(DEFAULT_LAYOUT)
     if not isinstance(value, dict):
         return layout
-    for key in ("x", "y"):
+    for key in ("x", "y", "petX", "petY"):
         coordinate = value.get(key)
         if isinstance(coordinate, int) and not isinstance(coordinate, bool):
             layout[key] = coordinate
     scale = value.get("scale")
     if isinstance(scale, (int, float)) and not isinstance(scale, bool):
         layout["scale"] = min(1.4, max(0.7, float(scale)))
+    bubble_scale = value.get("bubbleScale")
+    if isinstance(bubble_scale, (int, float)) and not isinstance(bubble_scale, bool):
+        layout["bubbleScale"] = min(1.2, max(0.6, float(bubble_scale)))
     if isinstance(value.get("reducedMotion"), bool):
         layout["reducedMotion"] = value["reducedMotion"]
     return layout

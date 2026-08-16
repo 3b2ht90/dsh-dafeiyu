@@ -37,6 +37,12 @@ test('unexpected helper exit restarts and replays the latest state snapshot', as
     activity: 'testing',
     message: 'replay me',
   }))
+  bridge.send(createMessage(CompanionMessageKind.CONFIG, {
+    scale: 0.9,
+    bubbleScale: 0.7,
+    activityLevel: 'quiet',
+    reducedMotion: true,
+  }))
 
   await waitFor(async () => {
     try {
@@ -56,6 +62,7 @@ test('unexpected helper exit restarts and replays the latest state snapshot', as
 
   const messages = (await readFile(eventLog, 'utf8')).trim().split(/\r?\n/).map(JSON.parse)
   assert.equal(messages.some((message) => message.state === CompanionState.WORKING), true)
+  assert.equal(messages.some((message) => message.kind === CompanionMessageKind.CONFIG && message.bubbleScale === 0.7), true)
   assert.equal(messages.at(-1).kind, CompanionMessageKind.SHUTDOWN)
   await rm(directory, { recursive: true, force: true })
 })

@@ -13,6 +13,7 @@ export const CONFIG_ENDPOINT = '/plugins/dsh-dafeiyu/config'
 export const Config = Schema.object({
   enabled: Schema.boolean().default(true).description('启用桌面大肥鱼'),
   scale: Schema.number().min(0.7).max(1.4).step(0.05).default(1).role('slider').description('角色大小'),
+  bubbleScale: Schema.number().min(0.6).max(1.2).step(0.05).default(1).role('slider').description('气泡大小'),
   activityLevel: Schema.union([
     Schema.const('quiet').description('安静'),
     Schema.const('normal').description('标准'),
@@ -25,6 +26,7 @@ export const Config = Schema.object({
 const defaults = Object.freeze({
   enabled: true,
   scale: 1,
+  bubbleScale: 1,
   activityLevel: 'normal',
   reducedMotion: false,
   includeSubagents: false,
@@ -34,6 +36,7 @@ function publicConfig(config = {}) {
   return {
     enabled: config.enabled ?? defaults.enabled,
     scale: config.scale ?? defaults.scale,
+    bubbleScale: config.bubbleScale ?? defaults.bubbleScale,
     activityLevel: config.activityLevel ?? defaults.activityLevel,
     reducedMotion: config.reducedMotion ?? defaults.reducedMotion,
     includeSubagents: config.includeSubagents ?? defaults.includeSubagents,
@@ -118,11 +121,36 @@ function mount(ctx, config = {}, eventCtx = ctx) {
 
   let bridge
   let reducer
+  let restartTimer
 
   const stopRuntime = (reason = 'settings-change') => {
     bridge?.stop(reason)
     bridge = undefined
     reducer = undefined
+  }
+
+  const restartRuntime = (next) => {
+    stopRuntime('settings-change')
+    startRuntime(next)
+  }
+
+  const applyLiveSettings = (next) => {
+    reducer = new CompanionReducer({ includeSubagents: next.includeSubagents === true })
+    bridge.send(createMessage(CompanionMessageKind.CONFIG, {
+      scale: next.scale ?? defaults.scale,
+      bubbleScale: next.bubbleScale ?? defaults.bubbleScale,
+      activityLevel: next.activityLevel ?? defaults.activityLevel,
+      reducedMotion: next.reducedMotion === true,
+    }))
+  }
+
+  const scheduleRestart = (next) => {
+    if (restartTimer) clearTimeout(restartTimer)
+    restartTimer = setTimeout(() => {
+      restartTimer = undefined
+      restartRuntime(next)
+    }, 400)
+    restartTimer.unref?.()
   }
 
   const startRuntime = (resolved) => {
@@ -136,6 +164,7 @@ function mount(ctx, config = {}, eventCtx = ctx) {
       env: {
         ...helperConfig.env,
         DSH_DAFEIYU_SCALE: String(resolved.scale ?? defaults.scale),
+        DSH_DAFEIYU_BUBBLE_SCALE: String(resolved.bubbleScale ?? defaults.bubbleScale),
         DSH_DAFEIYU_ACTIVITY_LEVEL: String(resolved.activityLevel ?? defaults.activityLevel),
         DSH_DAFEIYU_REDUCED_MOTION: resolved.reducedMotion === true ? '1' : '0',
       },
@@ -173,8 +202,27 @@ function mount(ctx, config = {}, eventCtx = ctx) {
   }, { global: true })
 
   const unwatch = settings.watch((next) => {
-    stopRuntime()
-    startRuntime(next)
+    // Disabling is the only path that tears the helper down.  Every other
+    // setting is applied live through a CONFIG message, so sliders never
+    // restart the pet.  Starting a previously-disabled runtime is debounced
+    // to avoid spawning repeatedly while settings settle.
+    if (next.enabled === false) {
+      if (restartTimer) {
+        clearTimeout(restartTimer)
+        restartTimer = undefined
+      }
+      stopRuntime('settings-change')
+      return
+    }
+    if (!bridge) {
+      scheduleRestart(next)
+      return
+    }
+    if (restartTimer) {
+      clearTimeout(restartTimer)
+      restartTimer = undefined
+    }
+    applyLiveSettings(next)
   })
   if (typeof ctx.inject === 'function') {
     ctx.inject(['webServer'], (httpCtx) => {
@@ -185,6 +233,8 @@ function mount(ctx, config = {}, eventCtx = ctx) {
     })
   }
   ctx.effect(() => () => {
+    if (restartTimer) clearTimeout(restartTimer)
+    restartTimer = undefined
     offEvent?.()
     offDisposed?.()
     unwatch()

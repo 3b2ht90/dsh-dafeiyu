@@ -155,6 +155,15 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 self.scale = min(1.4, max(0.7, float(configured_scale))) if configured_scale else self.layout["scale"]
             except ValueError:
                 self.scale = self.layout["scale"]
+            configured_bubble_scale = os.environ.get("DSH_DAFEIYU_BUBBLE_SCALE")
+            try:
+                self.bubble_scale = (
+                    min(1.2, max(0.6, float(configured_bubble_scale)))
+                    if configured_bubble_scale
+                    else self.layout["bubbleScale"]
+                )
+            except ValueError:
+                self.bubble_scale = self.layout["bubbleScale"]
             configured_reduced_motion = os.environ.get("DSH_DAFEIYU_REDUCED_MOTION")
             self.reduced_motion = (
                 configured_reduced_motion == "1"
@@ -184,7 +193,9 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             self.overlay_deadline_ms: int | None = None
             self.task = ""
             self.drag_origin: QPoint | None = None
-            self.window_origin: QPoint | None = None
+            self.pet_origin: QPoint | None = None
+            self.pet_x = 0
+            self.pet_y = 0
             self.dragging = False
             self.last_tick_ms = self._now_ms()
             self.animation_timer = QTimer(self)
@@ -220,6 +231,8 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                     self.model.base_state,
                     None if self.model.base_state in {"THINKING", "WORKING", "WAITING", "ERROR"} else 6000,
                 )
+            elif kind == "config":
+                self._apply_config(message)
             elif kind in {"state", "pulse"}:
                 state = str(message.get("state", "IDLE"))
                 self.display_state = state
@@ -260,6 +273,30 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             if snapshot_path is not None and not self.snapshot_saved:
                 QTimer.singleShot(180, self._save_snapshot)
 
+        def _apply_config(self, message: dict[str, Any]) -> None:
+            """Apply a live CONFIG message without restarting the window."""
+            scale = message.get("scale")
+            if isinstance(scale, (int, float)) and not isinstance(scale, bool):
+                self.scale = min(1.4, max(0.7, float(scale)))
+            bubble_scale = message.get("bubbleScale")
+            if isinstance(bubble_scale, (int, float)) and not isinstance(bubble_scale, bool):
+                self.bubble_scale = min(1.2, max(0.6, float(bubble_scale)))
+            reduced_motion = message.get("reducedMotion")
+            if isinstance(reduced_motion, bool) and reduced_motion != self.reduced_motion:
+                self.reduced_motion = reduced_motion
+                if self.reduced_motion:
+                    self.micro_timer.stop()
+                else:
+                    self._schedule_micro()
+            activity_level = message.get("activityLevel")
+            if activity_level in {"quiet", "normal", "lively"}:
+                self.activity_level = activity_level
+                if not self.reduced_motion:
+                    self._schedule_micro()
+            self._apply_window_size()
+            self._move_to_pet(self.pet_x, self.pet_y)
+            self._save_layout()
+
         def _tick(self) -> None:
             now_ms = self._now_ms()
             elapsed_ms = max(0, now_ms - self.last_tick_ms)
@@ -294,37 +331,115 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
         def _apply_window_size(self) -> None:
             pet_width = round(int(manifest["maxFrameWidth"]) * self.scale)
             pet_height = round(int(manifest["maxFrameHeight"]) * self.scale)
-            self.setFixedSize(max(448, pet_width + 50), pet_height + 118)
+            bubble_width = round(420 * self.bubble_scale)
+            bubble_height = round(84 * self.bubble_scale)
+            self.setFixedSize(max(pet_width + 50, bubble_width + 28), pet_height + bubble_height + 34)
+
+        def _screen_geometry_at(self, x: int, y: int):
+            screen = QApplication.screenAt(QPoint(x, y)) or QApplication.primaryScreen()
+            if screen is None:
+                return None
+            return screen.availableGeometry()
+
+        def _pet_size(self) -> tuple[int, int]:
+            return (
+                round(int(manifest["maxFrameWidth"]) * self.scale),
+                round(int(manifest["maxFrameHeight"]) * self.scale),
+            )
+
+        def _move_to_pet(self, pet_x: int, pet_y: int) -> None:
+            """Move the window so the pet stands at (pet_x, pet_y).
+
+            The pet position is the source of truth; the window is just the
+            container that keeps the status bubble on screen.  While the window
+            fits on screen the pet stays centered under it.  When the window
+            would have to leave the screen, it is clamped and the pet shifts
+            inside the window instead, so the pet can stand at any screen
+            position while the bubble stays fully visible.
+            """
+            pet_width, pet_height = self._pet_size()
+            geometry = self._screen_geometry_at(pet_x, pet_y)
+            if geometry is None:
+                self.pet_x = pet_x
+                self.pet_y = pet_y
+                self.move(
+                    pet_x - (self.width() - pet_width) // 2,
+                    pet_y - (self.height() - pet_height - 8),
+                )
+                self.update()
+                return
+
+            min_x = geometry.left()
+            max_x = max(min_x, geometry.right() - self.width() + 1)
+            min_y = geometry.top()
+            max_y = max(min_y, geometry.bottom() - self.height() + 1)
+
+            center_offset_x = (self.width() - pet_width) // 2
+            window_x = min(max(pet_x - center_offset_x, min_x), max_x)
+            offset_x = min(max(pet_x - window_x, 0), self.width() - pet_width)
+            self.pet_x = window_x + offset_x
+
+            top_offset_y = self.height() - pet_height - 8
+            window_y = min(max(pet_y - top_offset_y, min_y), max_y)
+            self.pet_y = window_y + top_offset_y
+
+            self.move(window_x, window_y)
+            self.update()
+
+        def _pet_offset_x(self, pet_width: int) -> int:
+            return min(max(self.pet_x - self.x(), 0), self.width() - pet_width)
+
+        def _pet_rect(self) -> tuple[int, int, int, int]:
+            pet_width, pet_height = self._pet_size()
+            return self._pet_offset_x(pet_width), self.height() - pet_height - 8, pet_width, pet_height
+
+        def _bubble_rect(self) -> tuple[int, int, int, int]:
+            card_width = round(420 * self.bubble_scale)
+            card_height = round(84 * self.bubble_scale)
+            pet_width, _ = self._pet_size()
+            pet_center_x = self._pet_offset_x(pet_width) + pet_width // 2
+            margin = 14
+            card_x = pet_center_x - card_width // 2
+            min_x = margin
+            max_x = self.width() - card_width - margin
+            if max_x < min_x:
+                max_x = min_x
+            card_x = min(max(card_x, min_x), max_x)
+            return card_x, 7, card_width, card_height
 
         def _restore_visible_position(self) -> None:
-            saved_x = self.layout.get("x")
-            saved_y = self.layout.get("y")
-            primary = QApplication.primaryScreen()
-            if primary is None:
-                return
-            if not isinstance(saved_x, int) or not isinstance(saved_y, int):
-                geometry = primary.availableGeometry()
-                saved_x = geometry.right() - self.width() - 24
-                saved_y = geometry.bottom() - self.height() - 24
-            self.move(saved_x, saved_y)
-            self._clamp_to_visible_screen()
-
-        def _clamp_to_visible_screen(self) -> None:
-            center = QPoint(self.x() + self.width() // 2, self.y() + self.height() // 2)
-            screen = QApplication.screenAt(center) or QApplication.primaryScreen()
-            if screen is None:
-                return
-            geometry = screen.availableGeometry()
-            x = min(max(self.x(), geometry.left()), max(geometry.left(), geometry.right() - self.width() + 1))
-            y = min(max(self.y(), geometry.top()), max(geometry.top(), geometry.bottom() - self.height() + 1))
-            self.move(x, y)
+            pet_width, pet_height = self._pet_size()
+            top_offset = self.height() - pet_height - 8
+            center_offset = (self.width() - pet_width) // 2
+            saved_pet_x = self.layout.get("petX")
+            saved_pet_y = self.layout.get("petY")
+            if isinstance(saved_pet_x, int) and isinstance(saved_pet_y, int):
+                pet_x, pet_y = saved_pet_x, saved_pet_y
+            else:
+                saved_x = self.layout.get("x")
+                saved_y = self.layout.get("y")
+                if isinstance(saved_x, int) and isinstance(saved_y, int):
+                    # Legacy layouts stored the window position.  Recreate the
+                    # pet position that the old centered layout would have had.
+                    pet_x = saved_x + center_offset
+                    pet_y = saved_y + top_offset
+                else:
+                    geometry = self._screen_geometry_at(self.x() + self.width() // 2, self.y() + self.height() // 2)
+                    if geometry is None:
+                        return
+                    pet_x = geometry.right() - pet_width - 24
+                    pet_y = geometry.bottom() - pet_height - 24
+            self._move_to_pet(pet_x, pet_y)
 
         def _save_layout(self) -> None:
             self.layout = {
                 "version": 1,
                 "x": self.x(),
                 "y": self.y(),
+                "petX": self.pet_x,
+                "petY": self.pet_y,
                 "scale": self.scale,
+                "bubbleScale": self.bubble_scale,
                 "reducedMotion": self.reduced_motion,
             }
             try:
@@ -418,31 +533,47 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             card = self._current_card()
-            bubble_height = 104 if card else 12
+            bubble_height = 12
             if card:
                 title, detail, card_state = card
-                card_x = 14
-                card_y = 7
-                card_width = self.width() - 28
-                card_height = 84
+                card_x, card_y, card_width, card_height = self._bubble_rect()
+                bubble_height = card_y + card_height + 19
+                s = self.bubble_scale
+                corner_radius = round(30 * s)
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.setBrush(QColor(17, 24, 39, 13))
-                painter.drawRoundedRect(card_x + 1, card_y + 13, card_width - 2, card_height, 30, 30)
+                painter.drawRoundedRect(
+                    card_x + 1, card_y + round(13 * s), card_width - 2, card_height,
+                    corner_radius, corner_radius,
+                )
                 painter.setBrush(QColor(17, 24, 39, 18))
-                painter.drawRoundedRect(card_x, card_y + 7, card_width, card_height, 30, 30)
+                painter.drawRoundedRect(
+                    card_x, card_y + round(7 * s), card_width, card_height,
+                    corner_radius, corner_radius,
+                )
                 painter.setPen(QPen(QColor(218, 221, 226, 205), 1))
                 painter.setBrush(QColor(252, 252, 253, 248))
-                painter.drawRoundedRect(card_x, card_y, card_width, card_height, 30, 30)
+                painter.drawRoundedRect(
+                    card_x, card_y, card_width, card_height,
+                    corner_radius, corner_radius,
+                )
 
-                icon_center_x = card_x + card_width - 39
+                icon_center_x = card_x + card_width - round(39 * s)
                 icon_center_y = card_y + card_height // 2
+                painter.save()
+                painter.translate(icon_center_x, icon_center_y)
+                painter.scale(s, s)
+                painter.translate(-icon_center_x, -icon_center_y)
                 self._draw_status_icon(painter, card_state, icon_center_x, icon_center_y)
+                painter.restore()
 
-                text_x = card_x + 24
-                text_width = card_width - 102
-                title_font = QFont("Microsoft YaHei UI", 11)
+                text_x = card_x + round(24 * s)
+                text_width = max(40, card_width - round(102 * s))
+                title_font = QFont("Microsoft YaHei UI")
+                title_font.setPointSizeF(max(8.0, 11.0 * s))
                 title_font.setWeight(QFont.Weight.DemiBold)
-                detail_font = QFont("Microsoft YaHei UI", 9)
+                detail_font = QFont("Microsoft YaHei UI")
+                detail_font.setPointSizeF(max(7.0, 9.0 * s))
                 painter.setFont(title_font)
                 painter.setPen(QColor("#25282D"))
                 title_text = QFontMetrics(title_font).elidedText(
@@ -452,9 +583,9 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 )
                 painter.drawText(
                     text_x,
-                    card_y + 15,
+                    card_y + round(15 * s),
                     text_width,
-                    27,
+                    max(12, round(27 * s)),
                     Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                     title_text,
                 )
@@ -467,9 +598,9 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 )
                 painter.drawText(
                     text_x,
-                    card_y + 43,
+                    card_y + round(43 * s),
                     text_width,
-                    24,
+                    max(12, round(24 * s)),
                     Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                     detail_text,
                 )
@@ -498,7 +629,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
 
             pixmap_width = round(pixmap.width() * self.scale)
             pixmap_height = round(pixmap.height() * self.scale)
-            x = (self.width() - pixmap_width) // 2 + offset_x
+            x = self._pet_offset_x(pixmap_width) + offset_x
             y = self.height() - pixmap_height - 8 + offset_y
             if bubble_height > y:
                 y = bubble_height
@@ -507,36 +638,37 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
         def mousePressEvent(self, event: QMouseEvent) -> None:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.drag_origin = event.globalPosition().toPoint()
-                self.window_origin = self.pos()
+                self.pet_origin = QPoint(self.pet_x, self.pet_y)
                 self.dragging = False
 
         def mouseMoveEvent(self, event: QMouseEvent) -> None:
-            if self.drag_origin is not None and self.window_origin is not None:
+            if self.drag_origin is not None and self.pet_origin is not None:
                 if not self.dragging and (event.globalPosition().toPoint() - self.drag_origin).manhattanLength() > 5:
                     self.dragging = True
                     self.model.play_overlay("dragging")
-                self.move(self.window_origin + event.globalPosition().toPoint() - self.drag_origin)
+                delta = event.globalPosition().toPoint() - self.drag_origin
+                self._move_to_pet(self.pet_origin.x() + delta.x(), self.pet_origin.y() + delta.y())
 
         def mouseReleaseEvent(self, event: QMouseEvent) -> None:
             if event.button() == Qt.MouseButton.LeftButton:
                 if self.dragging:
                     self.model.clear_overlay()
-                    self._clamp_to_visible_screen()
+                    self._move_to_pet(self.pet_x, self.pet_y)
                     self._save_layout()
                 else:
                     self._play_click_interaction(event.position().x(), event.position().y())
             self.drag_origin = None
-            self.window_origin = None
+            self.pet_origin = None
             self.dragging = False
 
         def _play_click_interaction(self, x: float, y: float) -> None:
-            pet_height = int(manifest["maxFrameHeight"]) * self.scale
-            pet_top = self.height() - pet_height - 8
-            relative_y = max(0.0, y - pet_top)
+            pet_x, pet_y, pet_width, pet_height = self._pet_rect()
+            relative_x = max(0.0, x - pet_x)
+            relative_y = max(0.0, y - pet_y)
             if relative_y < pet_height * 0.45:
                 self.model.play_overlay("head_pat")
                 self._show_overlay("摸摸也不能让我少干活哦~", self.status_detail, self.status_state, 1800)
-            elif x > self.width() * 0.72:
+            elif relative_x > pet_width * 0.72:
                 self.model.play_overlay("tail")
                 self._show_overlay("尾巴不是进度条啦！", self.status_detail, self.status_state, 1500)
             else:
@@ -557,6 +689,13 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 action.setCheckable(True)
                 action.setChecked(abs(self.scale - scale) < 0.05)
                 size_actions[action] = scale
+            bubble_size_menu = menu.addMenu("气泡大小")
+            bubble_size_actions = {}
+            for label, bubble_scale in (("小", 0.8), ("标准", 1.0), ("大", 1.2)):
+                action = bubble_size_menu.addAction(label)
+                action.setCheckable(True)
+                action.setChecked(abs(self.bubble_scale - bubble_scale) < 0.05)
+                bubble_size_actions[action] = bubble_scale
             reduced_action = menu.addAction("减少动态")
             reduced_action.setCheckable(True)
             reduced_action.setChecked(self.reduced_motion)
@@ -567,9 +706,13 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             if selected in size_actions:
                 self.scale = size_actions[selected]
                 self._apply_window_size()
-                self._clamp_to_visible_screen()
+                self._move_to_pet(self.pet_x, self.pet_y)
                 self._save_layout()
-                self.update()
+            elif selected in bubble_size_actions:
+                self.bubble_scale = bubble_size_actions[selected]
+                self._apply_window_size()
+                self._move_to_pet(self.pet_x, self.pet_y)
+                self._save_layout()
             elif selected == reduced_action:
                 self.reduced_motion = reduced_action.isChecked()
                 if self.reduced_motion:
