@@ -78,3 +78,69 @@ test('plugin forwards DSH-shaped session events and owns helper shutdown', async
   ])
   await rm(directory, { recursive: true, force: true })
 })
+
+test('live settings keep the active project state without restarting the helper', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'dsh-dafeiyu-live-settings-'))
+  const eventLog = join(directory, 'events.jsonl')
+  const listeners = new Map()
+  let dispose
+  let settingsListener
+  let settingsValue = {
+    enabled: true,
+    scale: 1,
+    bubbleScale: 1,
+    activityLevel: 'normal',
+    reducedMotion: false,
+    includeSubagents: false,
+  }
+  const settings = {
+    get: () => ({ ...settingsValue }),
+    watch(callback) {
+      settingsListener = callback
+      return () => { settingsListener = undefined }
+    },
+  }
+  const ctx = {
+    settings: { register: () => settings },
+    logger: { debug() {}, info() {}, warn() {}, error() {} },
+    on(name, callback) {
+      listeners.set(name, callback)
+    },
+    effect(setup) {
+      dispose = setup()
+    },
+  }
+
+  apply(ctx, { helper: { headless: true, eventLog } })
+  const activeSession = { header: { id: 'live-settings', cwd: 'D:\\work\\active-project' } }
+  listeners.get('session/event')(activeSession, { type: 'turn/start', seq: 1, data: { turn: 1 } })
+  listeners.get('session/event')(activeSession, {
+    type: 'todo/write',
+    seq: 2,
+    data: { todos: [{ content: '继续保留这个任务', status: 'in_progress' }] },
+  })
+  settingsValue = { ...settingsValue, scale: 0.9, bubbleScale: 0.8 }
+  settingsListener(settingsValue)
+  listeners.get('session/event')(activeSession, {
+    type: 'tool/call',
+    seq: 3,
+    data: { callId: 'edit-after-settings', name: 'apply_patch' },
+  })
+  dispose()
+
+  await waitFor(async () => {
+    try {
+      return (await readFile(eventLog, 'utf8')).includes('"kind": "shutdown"')
+    } catch {
+      return false
+    }
+  })
+
+  const messages = (await readFile(eventLog, 'utf8')).trim().split(/\r?\n/).map(JSON.parse)
+  assert.equal(messages.filter((message) => message.kind === 'hello').length, 1)
+  assert.equal(messages.filter((message) => message.kind === 'config').length, 1)
+  const working = messages.findLast((message) => message.state === 'WORKING')
+  assert.equal(working.project, 'active-project')
+  assert.equal(working.task, '继续保留这个任务')
+  await rm(directory, { recursive: true, force: true })
+})

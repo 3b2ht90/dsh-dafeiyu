@@ -57,6 +57,29 @@ test('subagent events are ignored by default', () => {
   assert.deepEqual(reducer.handle(child, event('turn/start', { turn: 1 }, 1)), [])
 })
 
+test('live subagent setting preserves top-level session state', () => {
+  const reducer = new CompanionReducer()
+  const child = { header: { id: 'child', origin: 'subagent', delegationDepth: 1 } }
+  reducer.handle(session, event('turn/start', { turn: 1 }, 1))
+  reducer.handle(session, event('todo/write', {
+    todos: [{ content: '保留当前进度', status: 'in_progress' }],
+  }, 2))
+  reducer.handle(session, event('tool/call', { callId: 'main-work', name: 'apply_patch' }, 3))
+
+  assert.deepEqual(reducer.setIncludeSubagents(true), [])
+  reducer.handle(child, event('turn/start', { turn: 1 }, 1))
+  const [blocked] = reducer.handle(child, event('turn/end', {
+    turn: 1,
+    reason: { kind: 'blocked' },
+  }, 2))
+  assert.equal(blocked.sessionId, 'child')
+
+  const [restored] = reducer.setIncludeSubagents(false)
+  assert.equal(restored.sessionId, 'session-main')
+  assert.equal(restored.state, CompanionState.WORKING)
+  assert.equal(restored.task, '保留当前进度')
+})
+
 test('tool categories keep renderer semantics independent from DSH tool names', () => {
   assert.equal(toolActivity('functions.search_files'), 'searching')
   assert.equal(toolActivity('apply_patch'), 'editing')

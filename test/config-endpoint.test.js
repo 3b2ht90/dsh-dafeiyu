@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { Readable } from 'node:stream'
 import test from 'node:test'
 import { createConfigHandler } from '../src/index.js'
 
 function settingsFixture() {
-  let value = { enabled: true, scale: 1, activityLevel: 'normal', reducedMotion: false, includeSubagents: false }
+  let value = { enabled: true, scale: 1, bubbleScale: 1, activityLevel: 'normal', reducedMotion: false, includeSubagents: false }
   return {
     get: () => ({ ...value }),
     update: async (patch) => { value = { ...value, ...patch } },
@@ -35,12 +36,13 @@ test('local config endpoint reads and persists an allowed patch', async () => {
 
   const changed = await request(handler, {
     method: 'PATCH',
-    body: JSON.stringify({ enabled: false, scale: 0.8 }),
+    body: JSON.stringify({ enabled: false, scale: 0.8, bubbleScale: 0.8 }),
     origin: 'http://127.0.0.1:2026',
   })
   assert.equal(changed.status, 200)
   assert.equal(changed.body.enabled, false)
   assert.equal(changed.body.scale, 0.8)
+  assert.equal(changed.body.bubbleScale, 0.8)
 })
 
 test('local config endpoint rejects remote, cross-origin, and unknown writes', async () => {
@@ -48,4 +50,11 @@ test('local config endpoint rejects remote, cross-origin, and unknown writes', a
   assert.equal((await request(handler, { address: '192.168.1.8' })).status, 403)
   assert.equal((await request(handler, { origin: 'https://example.com' })).status, 403)
   assert.equal((await request(handler, { method: 'PATCH', body: '{"surprise":true}' })).status, 400)
+})
+
+test('settings client debounces each slider independently', async () => {
+  const source = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8')
+  assert.match(source, /sliderTimers = useRef\(new Map\(\)\)/u)
+  assert.match(source, /sliderTimers\.current\.get\(field\)/u)
+  assert.match(source, /sliderTimers\.current\.set\(field, timer\)/u)
 })

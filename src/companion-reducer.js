@@ -89,12 +89,26 @@ export class CompanionReducer {
     this.outputSignature = undefined
   }
 
+  setIncludeSubagents(value) {
+    const includeSubagents = value === true
+    if (includeSubagents === this.includeSubagents) return []
+    this.includeSubagents = includeSubagents
+    if (!includeSubagents) {
+      for (const [sessionId, record] of this.sessions) {
+        if (record.subagent) this.sessions.delete(sessionId)
+      }
+    }
+    return this.#render()
+  }
+
   handle(session, event) {
     if (!event || typeof event.type !== 'string') return []
-    if (!this.includeSubagents && isSubagent(session)) return []
+    const subagent = isSubagent(session)
+    if (!this.includeSubagents && subagent) return []
 
     const sessionId = sessionIdOf(session)
     const record = this.#record(sessionId)
+    record.subagent = subagent
     record.lastSeq = Number(event.seq ?? record.lastSeq)
     record.project = projectNameOf(session, event) ?? record.project
 
@@ -299,6 +313,7 @@ export class CompanionReducer {
       task: undefined,
       progress: undefined,
       project: undefined,
+      subagent: false,
       lastSeq: -1,
       updatedAt: ++this.clock,
     }

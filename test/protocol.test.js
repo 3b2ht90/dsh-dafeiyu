@@ -23,3 +23,14 @@ test('protocol accepts the helper readiness handshake', () => {
   const message = createMessage(CompanionMessageKind.READY)
   assert.equal(assertCompanionMessage(message).kind, 'ready')
 })
+
+test('protocol creates and encodes a live config message', () => {
+  const message = createMessage(CompanionMessageKind.CONFIG, {
+    scale: 0.9,
+    bubbleScale: 0.7,
+    activityLevel: 'quiet',
+    reducedMotion: true,
+  })
+  assert.equal(assertCompanionMessage(message), message)
+  assert.deepEqual(JSON.parse(encodeMessage(message)), message)
+})
