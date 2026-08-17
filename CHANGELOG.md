@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Release engineering
+
+- Added GitHub Actions trusted publishing: the Windows Helper is built and smoke-tested on Windows,
+  while npm publishing uses short-lived OIDC credentials instead of local npm login state
+- Added retry-safe npm archive verification and automatic GitHub Release attachment publishing
+
 ## 0.1.0-alpha.11
 
 

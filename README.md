@@ -16,7 +16,7 @@ DSH 大肥鱼不是一个需要单独启动的桌宠应用。它由 DSH 插件�
 一起启动和退出，并以透明、无边框、始终置顶的原生窗口显示在桌面上。即使切换到
 VS Code、浏览器或文件管理器，也能知道 DSH 当前在思考、修改、测试、等待还是已经完成。
 
-> 当前版本：`0.1.0-alpha.10` · Windows / WSL2 Alpha
+> 当前版本：`0.1.0-alpha.11` · Windows / WSL2 Alpha
 
 ## 它有什么用？
 
@@ -305,6 +305,7 @@ npm run build:helper:windows
 - [兼容性验证](docs/PHASE0.md)
 - [Windows 验收与性能记录](docs/ACCEPTANCE.md)
 - [更新、回退与卸载](docs/UPDATING.md)
+- [维护者发布流程](docs/RELEASING.md)
 - [角色视觉资产许可](ASSET_LICENSE.md)
 
 相关项目：[QCYTSN/ds-local-pet](https://github.com/QCYTSN/ds-local-pet) 是独立桌宠版本；
