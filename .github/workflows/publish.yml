@@ -136,7 +136,7 @@ jobs:
           fi
 
           local_integrity=$(node -e "const fs=require('fs');const crypto=require('crypto');const p=process.argv[1];console.log('sha512-'+crypto.createHash('sha512').update(fs.readFileSync(p)).digest('base64'))" "$archive")
-          remote_integrity=$(npm view "${package_name}@${version}" dist.integrity --json 2>/dev/null | tr -d '"' || true)
+          remote_integrity=$(npm view "${package_name}@${version}" dist.integrity 2>/dev/null || true)
 
           publish_needed=true
           if [[ -n "$remote_integrity" ]]; then
