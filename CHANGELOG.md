@@ -8,6 +8,22 @@
   while npm publishing uses short-lived OIDC credentials instead of local npm login state
 - Added retry-safe npm archive verification and automatic GitHub Release attachment publishing
 
+## 0.1.0-alpha.12
+
+
+
+Loader compatibility fix.
+
+
+
+### Fixed
+
+
+
+- Updated `cordis.patch.yml` to include the current plugin config fields (`bubbleScale`, `bubbleMode`, `bubbleStates`), reducing the chance of `failed to apply loader entry` after DSH Harness updates
+
+
+
 ## 0.1.0-alpha.11
 
 
