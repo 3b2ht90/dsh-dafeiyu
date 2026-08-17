@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-alpha.11 (unreleased)
+## 0.1.0-alpha.11
 
 
 
