@@ -16,7 +16,7 @@ DSH 大肥鱼不是一个需要单独启动的桌宠应用。它由 DSH 插件�
 一起启动和退出，并以透明、无边框、始终置顶的原生窗口显示在桌面上。即使切换到
 VS Code、浏览器或文件管理器，也能知道 DSH 当前在思考、修改、测试、等待还是已经完成。
 
-> 当前版本：`0.1.0-alpha.9` · Windows MVP Alpha
+> 当前版本：`0.1.0-alpha.10` · Windows / WSL2 Alpha
 
 ## 它有什么用？
 
@@ -105,6 +105,11 @@ pnpm exec dsh plugin --profile web add dsh-dafeiyu@alpha
 ```powershell
 dsh plugin --profile web add dsh-dafeiyu@alpha
 ```
+
+如果 DSH 运行在 WSL2，请在 WSL 终端执行同一条安装命令。插件会自动通过
+`cmd.exe` 启动包内的 Windows Helper，不需要手动 `chmod`，也不需要在 WSL
+安装 Python 或 PySide6。当前支持范围是 Windows x64 上的 WSL2；普通 Linux、
+远程 Linux 和容器不是本版本的桌面显示目标。
 
 ### 3. GitHub Release 备用安装方式
 

@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
@@ -30,9 +30,50 @@ function shouldUseBundledHelper() {
   return (process.platform === 'win32' || isWsl()) && existsSync(bundledHelperPath)
 }
 
+function toWindowsPath(path) {
+  return execFileSync('wslpath', ['-w', path], { encoding: 'utf8' }).trim()
+}
+
+function resolveHelperLaunch({
+  platform,
+  isWslEnv,
+  bundledPath,
+  helperPath,
+  pythonEnv,
+  headless = false,
+  fileExists = existsSync,
+  windowsPath = toWindowsPath,
+}) {
+  if (platform === 'win32' && fileExists(bundledPath)) {
+    return { command: bundledPath, args: [] }
+  }
+  if (platform === 'linux' && isWslEnv && !headless && fileExists(bundledPath)) {
+    // npm archives created on Windows store ordinary files as 0644. Launching
+    // the EXE directly from WSL can therefore fail with EACCES. cmd.exe opens
+    // the Windows path without relying on the Linux executable bit and keeps
+    // stdin/stdout attached for the companion protocol.
+    return {
+      command: 'cmd.exe',
+      args: ['/d', '/c', windowsPath(bundledPath)],
+    }
+  }
+  const command = pythonEnv || (platform === 'win32' ? 'py' : 'python3')
+  return { command, args: defaultArgs(command, helperPath) }
+}
+
+function defaultLaunch(headless = false) {
+  return resolveHelperLaunch({
+    platform: process.platform,
+    isWslEnv: isWsl(),
+    bundledPath: bundledHelperPath,
+    helperPath: defaultHelperPath,
+    pythonEnv: process.env.DSH_DAFEIYU_PYTHON,
+    headless,
+  })
+}
+
 function defaultCommand(headless = false) {
-  if (shouldUseBundledHelper() && !(headless && isWsl())) return bundledHelperPath
-  return process.env.DSH_DAFEIYU_PYTHON || (process.platform === 'win32' ? 'py' : 'python3')
+  return defaultLaunch(headless).command
 }
 
 function defaultArgs(command, helperPath) {
@@ -63,9 +104,12 @@ export class HelperProcess {
   start() {
     if (this.child || this.stopping || this.restartSuppressed) return this.child
     const headless = this.options.headless ?? process.env.DSH_DAFEIYU_HEADLESS === '1'
-    const command = this.options.command || defaultCommand(headless)
     const helperPath = this.options.helperPath || defaultHelperPath
-    const args = this.options.args || defaultArgs(command, helperPath)
+    const launch = this.options.command
+      ? { command: this.options.command, args: defaultArgs(this.options.command, helperPath) }
+      : defaultLaunch(headless)
+    const command = launch.command
+    const args = this.options.args || launch.args
     const extraArgs = []
     const eventLog = this.options.eventLog || process.env.DSH_DAFEIYU_EVENT_LOG
     const snapshot = this.options.snapshot || process.env.DSH_DAFEIYU_SNAPSHOT
@@ -240,4 +284,14 @@ export class HelperProcess {
   }
 }
 
-export { bundledHelperPath, defaultHelperPath, defaultArgs, defaultCommand, isWsl, shouldUseBundledHelper }
+export {
+  bundledHelperPath,
+  defaultHelperPath,
+  defaultArgs,
+  defaultCommand,
+  defaultLaunch,
+  isWsl,
+  resolveHelperLaunch,
+  shouldUseBundledHelper,
+  toWindowsPath,
+}

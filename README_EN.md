@@ -17,7 +17,7 @@ stops its native Helper, and provides the Agent events that drive it. The transp
 frameless companion stays above other Windows apps, so you can see whether DSH is thinking,
 editing, testing, waiting, or finished while working in VS Code, a browser, or File Explorer.
 
-> Current version: `0.1.0-alpha.9` · Windows MVP Alpha
+> Current version: `0.1.0-alpha.10` · Windows / WSL2 Alpha
 
 ## What is it for?
 
@@ -108,6 +108,11 @@ If `dsh` is already available globally, the command is simply:
 dsh plugin --profile web add dsh-dafeiyu@alpha
 ```
 
+When DSH runs inside WSL2, run the same install command in the WSL terminal. The plugin
+launches the bundled Windows Helper through `cmd.exe`; no manual `chmod`, Python, or
+PySide6 installation is required inside WSL. The current target is WSL2 on Windows x64,
+not ordinary Linux, remote Linux, or containers.
+
 ### 3. GitHub Release fallback
 
 Open [GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) and download:
@@ -115,8 +120,6 @@ Open [GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases/latest) an
 ```text
 dsh-dafeiyu-<version>.tgz
 ```
-
-Do not extract it.
 
 Do not extract it. Install the downloaded archive from the DSH directory:
 
