@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.0-alpha.11 (unreleased)
+
+
+
+Bubble visibility modes.
+
+
+
+### Added
+
+
+
+- New “气泡显示” setting in the DSH plugin panel: 常驻显示 / 完全隐藏 / 自定义显示状态
+
+- Custom mode lets users choose exactly which DSH states show the status bubble
+
+- When bubble is hidden, the Helper window shrinks to the character only
+
+
+
+### Changed
+
+
+
+- Supersedes the simple global hide-bubble idea with a three-mode design that also covers Issue #15
+
 ## 0.1.0-alpha.10
 
 WSL2 support and Issue #12 desktop interaction enhancements.

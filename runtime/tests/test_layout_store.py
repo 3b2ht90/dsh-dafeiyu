@@ -26,12 +26,20 @@ class LayoutStoreTests(unittest.TestCase):
                 "scale": 1.4,
                 "bubbleScale": 1.0,
                 "reducedMotion": True,
+                "bubbleMode": "always",
+                "bubbleStates": ["SUCCESS", "ERROR", "WAITING"],
             })
             self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["scale"], 1.4)
             self.assertEqual(list(path.parent.glob("*.tmp")), [])
 
     def test_boolean_is_not_accepted_as_a_coordinate_or_scale(self) -> None:
         self.assertEqual(normalise_layout({"x": True, "petX": False, "scale": False, "bubbleScale": False}), DEFAULT_LAYOUT)
+
+    def test_bubble_mode_and_states_are_normalised(self) -> None:
+        self.assertEqual(normalise_layout({"bubbleMode": "hidden"})["bubbleMode"], "hidden")
+        self.assertEqual(normalise_layout({"bubbleMode": "invalid"})["bubbleMode"], "always")
+        self.assertEqual(normalise_layout({"bubbleStates": ["SUCCESS", "ERROR"]})["bubbleStates"], ["SUCCESS", "ERROR"])
+        self.assertEqual(normalise_layout({"bubbleStates": "bad"})["bubbleStates"], ["SUCCESS", "ERROR", "WAITING"])
 
     def test_bubble_scale_is_clamped(self) -> None:
         self.assertEqual(normalise_layout({"bubbleScale": 9})["bubbleScale"], 1.2)

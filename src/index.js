@@ -20,6 +20,12 @@ export const Config = Schema.object({
     Schema.const('lively').description('活泼'),
   ]).default('normal').description('空闲微动作频率'),
   reducedMotion: Schema.boolean().default(false).description('减少走动、循环帧和程序化晃动'),
+  bubbleMode: Schema.union([
+    Schema.const('always').description('常驻显示'),
+    Schema.const('hidden').description('完全隐藏'),
+    Schema.const('custom').description('自定义显示状态'),
+  ]).default('always').description('气泡显示模式'),
+  bubbleStates: Schema.array(Schema.string()).default(['SUCCESS', 'ERROR', 'WAITING']).description('自定义模式下显示气泡的状态'),
   includeSubagents: Schema.boolean().default(false).description('允许子 Agent 抢占宠物状态'),
 }).description('由 DeepSeek Harness 状态驱动的桌面大肥鱼伴侣')
 
@@ -29,6 +35,8 @@ const defaults = Object.freeze({
   bubbleScale: 1,
   activityLevel: 'normal',
   reducedMotion: false,
+  bubbleMode: 'always',
+  bubbleStates: ['SUCCESS', 'ERROR', 'WAITING'],
   includeSubagents: false,
 })
 
@@ -39,6 +47,8 @@ function publicConfig(config = {}) {
     bubbleScale: config.bubbleScale ?? defaults.bubbleScale,
     activityLevel: config.activityLevel ?? defaults.activityLevel,
     reducedMotion: config.reducedMotion ?? defaults.reducedMotion,
+    bubbleMode: config.bubbleMode ?? defaults.bubbleMode,
+    bubbleStates: Array.isArray(config.bubbleStates) ? config.bubbleStates : defaults.bubbleStates,
     includeSubagents: config.includeSubagents ?? defaults.includeSubagents,
   }
 }
@@ -141,6 +151,8 @@ function mount(ctx, config = {}, eventCtx = ctx) {
       bubbleScale: next.bubbleScale ?? defaults.bubbleScale,
       activityLevel: next.activityLevel ?? defaults.activityLevel,
       reducedMotion: next.reducedMotion === true,
+      bubbleMode: next.bubbleMode ?? defaults.bubbleMode,
+      bubbleStates: Array.isArray(next.bubbleStates) ? next.bubbleStates : defaults.bubbleStates,
     }))
   }
 
@@ -167,6 +179,8 @@ function mount(ctx, config = {}, eventCtx = ctx) {
         DSH_DAFEIYU_BUBBLE_SCALE: String(resolved.bubbleScale ?? defaults.bubbleScale),
         DSH_DAFEIYU_ACTIVITY_LEVEL: String(resolved.activityLevel ?? defaults.activityLevel),
         DSH_DAFEIYU_REDUCED_MOTION: resolved.reducedMotion === true ? '1' : '0',
+        DSH_DAFEIYU_BUBBLE_MODE: String(resolved.bubbleMode ?? defaults.bubbleMode),
+        DSH_DAFEIYU_BUBBLE_STATES: (Array.isArray(resolved.bubbleStates) ? resolved.bubbleStates : defaults.bubbleStates).join(','),
         DSH_DAFEIYU_WEBUI_URL: String(config.webuiUrl ?? process.env.DSH_DAFEIYU_WEBUI_URL ?? 'http://127.0.0.1:3080/'),
       },
     }, logger)
