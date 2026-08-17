@@ -66,9 +66,11 @@ stateDiagram-v2
 
 `等待确认 > 错误 > 工作 > 思考 > 空闲`
 
+当有多个活动任务时，状态气泡会同时列出这些任务的状态。
+
 ## 系统要求
 
-- Windows 10/11 x64
+- Windows 10/11 x64，或 WSL2（通过 Windows interop 运行桌面 Helper）
 - 已安装并能正常运行的 DeepSeek Harness WebUI
 - DSH CLI 中可以使用 `plugin --profile web` 命令
 - npm 上的 `dsh-dafeiyu@alpha`，或 GitHub Release 中的 `.tgz` 安装包
@@ -172,7 +174,7 @@ pnpm exec dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<vers
 
 - **拖动**：按住大肥鱼移动位置，位置会自动保存。
 - **点击或双击**：触发摸头、戳一下、尾巴等短互动，之后恢复最新 DSH 状态。
-- **右键菜单**：调整大小、气泡大小、减少动态、本次隐藏或本次关闭。
+- **右键菜单**：调整大小、气泡大小、减少动态、打开 WebUI、本次隐藏或本次关闭。
 - **本次隐藏**：只隐藏窗口，不禁用插件。
 - **本次关闭**：关闭当前 Helper，本次 DSH 运行期间不会自动重启；下次启动 DSH 会再次出现。
 

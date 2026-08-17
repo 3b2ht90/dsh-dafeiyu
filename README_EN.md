@@ -67,9 +67,11 @@ When several DSH sessions run at once, the default attention priority is:
 
 `Waiting > Error > Working > Thinking > Idle`
 
+When multiple tasks are active, the status bubble lists them at the same time.
+
 ## Requirements
 
-- Windows 10/11 x64
+- Windows 10/11 x64, or WSL2 (runs the desktop Helper through Windows interop)
 - A working DeepSeek Harness WebUI installation
 - A DSH CLI that supports `plugin --profile web`
 - `dsh-dafeiyu@alpha` from npm, or a `.tgz` archive from GitHub Releases
@@ -175,7 +177,7 @@ DSH persists these settings, so a normal plugin update does not require reconfig
 
 - **Drag:** move BigFish; its position is saved automatically.
 - **Click or double-click:** trigger brief head-pat, poke, or tail reactions, then return to the latest DSH state.
-- **Right-click:** change size, bubble size, reduce motion, hide for now, or close for this run.
+- **Right-click:** change size, bubble size, reduce motion, open WebUI, hide for now, or close for this run.
 - **Hide for now:** hides the window without disabling the plugin.
 - **Close for this run:** closes the current Helper and suppresses restart until the next DSH launch.
 
