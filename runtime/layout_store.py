@@ -18,6 +18,8 @@ DEFAULT_LAYOUT: dict[str, Any] = {
     "scale": 1.0,
     "bubbleScale": 1.0,
     "reducedMotion": False,
+    "bubbleMode": "always",
+    "bubbleStates": ["SUCCESS", "ERROR", "WAITING"],
 }
 
 
@@ -50,6 +52,10 @@ def normalise_layout(value: Any) -> dict[str, Any]:
         layout["bubbleScale"] = min(1.2, max(0.8, float(bubble_scale)))
     if isinstance(value.get("reducedMotion"), bool):
         layout["reducedMotion"] = value["reducedMotion"]
+    if value.get("bubbleMode") in {"always", "hidden", "custom"}:
+        layout["bubbleMode"] = value["bubbleMode"]
+    if isinstance(value.get("bubbleStates"), list):
+        layout["bubbleStates"] = [str(state) for state in value["bubbleStates"] if isinstance(state, str)]
     return layout
 
 

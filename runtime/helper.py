@@ -171,6 +171,17 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 else self.layout["reducedMotion"]
             )
             self.activity_level = os.environ.get("DSH_DAFEIYU_ACTIVITY_LEVEL", "normal")
+            configured_bubble_mode = os.environ.get("DSH_DAFEIYU_BUBBLE_MODE")
+            self.bubble_mode = (
+                configured_bubble_mode
+                if configured_bubble_mode in {"always", "hidden", "custom"}
+                else self.layout.get("bubbleMode", "always")
+            )
+            configured_bubble_states = os.environ.get("DSH_DAFEIYU_BUBBLE_STATES")
+            if configured_bubble_states is not None:
+                self.bubble_states = [part.strip() for part in configured_bubble_states.split(",") if part.strip()]
+            else:
+                self.bubble_states = list(self.layout.get("bubbleStates", ["SUCCESS", "ERROR", "WAITING"]))
             self.model = AnimationModel(manifest)
             self.pixmaps: dict[str, QPixmap] = {}
             for clip in self.model.clips.values():
@@ -244,8 +255,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             elif kind == "tasks":
                 raw_tasks = message.get("tasks")
                 self.tasks = raw_tasks if isinstance(raw_tasks, list) else []
-                self._apply_window_size()
-                self._move_to_pet(self.pet_x, self.pet_y)
+                self._sync_bubble_size()
             elif kind == "config":
                 self._apply_config(message)
             elif kind in {"state", "pulse"}:
@@ -287,6 +297,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                         None if persistent else 4200,
                     )
             self._sync_frame_transition(previous_frame, previous_clip)
+            self._sync_bubble_size()
             self.update()
             if snapshot_path is not None and not self.snapshot_saved:
                 QTimer.singleShot(180, self._save_snapshot)
@@ -312,8 +323,13 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 self.activity_level = activity_level
                 if not self.reduced_motion:
                     self._schedule_micro()
-            self._apply_window_size()
-            self._move_to_pet(self.pet_x, self.pet_y)
+            bubble_mode = message.get("bubbleMode")
+            if bubble_mode in {"always", "hidden", "custom"}:
+                self.bubble_mode = bubble_mode
+            bubble_states = message.get("bubbleStates")
+            if isinstance(bubble_states, list):
+                self.bubble_states = [str(state) for state in bubble_states if isinstance(state, str)]
+            self._sync_bubble_size()
             self._save_layout()
 
         def _tick(self) -> None:
@@ -412,12 +428,31 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             lower, upper = intervals.get(self.activity_level, intervals["normal"])
             self.micro_timer.start(random.randint(lower, upper))
 
+        def _bubble_visible(self) -> bool:
+            if self.bubble_mode == "hidden":
+                return False
+            if self.bubble_mode == "always":
+                return True
+            if len(self.tasks) >= 2:
+                return any(task.get("state") in self.bubble_states for task in self.tasks)
+            state = self.overlay_state or self.status_state or self.model.base_state or "IDLE"
+            return state in self.bubble_states
+
+        def _sync_bubble_size(self) -> None:
+            old_size = (self.width(), self.height())
+            self._apply_window_size()
+            if (self.width(), self.height()) != old_size:
+                self._move_to_pet(self.pet_x, self.pet_y)
+
         def _apply_window_size(self) -> None:
             pet_width = round(int(manifest["maxFrameWidth"]) * self.scale)
             pet_height = round(int(manifest["maxFrameHeight"]) * self.scale)
-            bubble_width = round(420 * self.bubble_scale)
-            bubble_height = self._card_height()
-            self.setFixedSize(max(pet_width + 50, bubble_width + 28), pet_height + bubble_height + 34)
+            if self._bubble_visible():
+                bubble_width = round(420 * self.bubble_scale)
+                bubble_height = self._card_height()
+                self.setFixedSize(max(pet_width + 50, bubble_width + 28), pet_height + bubble_height + 34)
+            else:
+                self.setFixedSize(pet_width + 50, pet_height + 26)
 
         def _screen_geometry_at(self, x: int, y: int):
             screen = QApplication.screenAt(QPoint(x, y)) or QApplication.primaryScreen()
@@ -525,6 +560,8 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 "scale": self.scale,
                 "bubbleScale": self.bubble_scale,
                 "reducedMotion": self.reduced_motion,
+                "bubbleMode": self.bubble_mode,
+                "bubbleStates": self.bubble_states,
             }
             try:
                 save_layout(self.layout_path, self.layout)
@@ -739,13 +776,13 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             # 平滑缩放：放大/缩小时插值，避免锯齿和模糊
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-            card = self._current_card()
+            card = self._current_card() if self._bubble_visible() else None
             bubble_height = 12
             card_x, card_y, card_width, card_height = self._bubble_rect()
             s = self.bubble_scale
             corner_radius = round(30 * s)
 
-            if len(self.tasks) >= 2:
+            if len(self.tasks) >= 2 and self._bubble_visible():
                 bubble_height = card_y + card_height + 19
                 self._draw_card_background(painter, card_x, card_y, card_width, card_height, corner_radius, s)
                 self._draw_multi_task_card(painter, card_x, card_y, card_width, card_height, s)
