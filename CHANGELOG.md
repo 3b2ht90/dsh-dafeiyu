@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0
+
+Promoted to stable. Same hardened build that shipped as 0.1.0-alpha.15, now the default
+`latest` npm version so plain `dsh plugin add dsh-dafeiyu` installs a DSH rc.7-compatible
+release instead of the stale 0.1.0-alpha.6.
+
 ## 0.1.0-alpha.15
 
 Fault isolation and robustness hardening so the pet can never take down

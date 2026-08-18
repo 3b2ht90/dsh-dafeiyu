@@ -16,7 +16,7 @@ DSH 大肥鱼不是一个需要单独启动的桌宠应用。它由 DSH 插件�
 一起启动和退出，并以透明、无边框、始终置顶的原生窗口显示在桌面上。即使切换到
 VS Code、浏览器或文件管理器，也能知道 DSH 当前在思考、修改、测试、等待还是已经完成。
 
-> 当前版本：`0.1.0-alpha.15` · Windows / WSL2 Alpha
+> 当前版本：`0.1.0` · Windows / WSL2 Alpha
 
 ## 它有什么用？
 
@@ -73,7 +73,7 @@ stateDiagram-v2
 - Windows 10/11 x64，或 WSL2（通过 Windows interop 运行桌面 Helper）
 - 已安装并能正常运行的 DeepSeek Harness WebUI
 - DSH CLI 中可以使用 `plugin --profile web` 命令
-- npm 上的 `dsh-dafeiyu@alpha`，或 GitHub Release 中的 `.tgz` 安装包
+- npm 上的稳定版 `dsh-dafeiyu`（或抢先测试的 `dsh-dafeiyu@alpha`），或 GitHub Release 中的 `.tgz` 安装包
 
 普通用户**不需要**安装 Python、PySide6 或单独运行
 `dsh-dafeiyu-helper.exe`。Windows Helper 已经包含在发布包里。
@@ -94,17 +94,19 @@ stateDiagram-v2
 cd D:\DSH
 ```
 
-然后从 npm 安装当前 Alpha：
+然后从 npm 安装稳定版：
 
 ```powershell
-pnpm exec dsh plugin --profile web add dsh-dafeiyu@alpha
+pnpm exec dsh plugin --profile web add dsh-dafeiyu
 ```
 
 如果你的系统已经能直接使用全局 `dsh` 命令，只需要：
 
 ```powershell
-dsh plugin --profile web add dsh-dafeiyu@alpha
+dsh plugin --profile web add dsh-dafeiyu
 ```
+
+想抢先试用新功能（`@alpha` 测试版）的用户，把命令里的包名换成 `dsh-dafeiyu@alpha` 即可。
 
 如果 DSH 运行在 WSL2，请在 WSL 终端执行同一条安装命令。插件会自动通过
 `cmd.exe` 启动包内的 Windows Helper，不需要手动 `chmod`，也不需要在 WSL
@@ -187,18 +189,20 @@ pnpm exec dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<vers
 ## 更新插件
 
 GitHub 仓库出现新提交后，已经安装的插件**不会自动变化**。新版本发布后，完全退出
-DSH，然后更新 npm Alpha 包：
+DSH，然后更新 npm 稳定版包：
 
 ```powershell
 cd D:\DSH
-pnpm exec dsh plugin --profile web update dsh-dafeiyu@alpha
+pnpm exec dsh plugin --profile web update dsh-dafeiyu
 ```
 
-也可以再次执行安装命令，它会解析 `alpha` 标签指向的新版本：
+也可以再次执行安装命令，它会解析 npm `latest` 标签指向的新版本：
 
 ```powershell
-pnpm exec dsh plugin --profile web add dsh-dafeiyu@alpha
+pnpm exec dsh plugin --profile web add dsh-dafeiyu
 ```
+
+使用 `@alpha` 测试版的用户，把更新命令里的包名换成 `dsh-dafeiyu@alpha` 即可。
 
 使用 GitHub Release 安装的用户，可以下载新 `.tgz` 后覆盖安装：
 
