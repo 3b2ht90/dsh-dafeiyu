@@ -22,6 +22,8 @@ Loader compatibility fix.
 
 - Updated `cordis.patch.yml` to include the current plugin config fields (`bubbleScale`, `bubbleMode`, `bubbleStates`), reducing the chance of `failed to apply loader entry` after DSH Harness updates
 
+- Added the required `key: 'dsh-dafeiyu'` when registering the `settings.plugin.item` slot, fixing DSH rc.7 `requires options.key` loader failures
+
 
 
 ## 0.1.0-alpha.11
