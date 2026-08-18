@@ -8,6 +8,8 @@ Enabled by DSH, owned by the DSH lifecycle, rendered on the desktop.
 
 [中文](README.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [Latest release](https://github.com/QCYTSN/dsh-dafeiyu/releases) · [Changelog](CHANGELOG.md) · [Update and rollback](docs/UPDATING.md) · [Acceptance notes](docs/ACCEPTANCE.md)
 
+[![npm](https://img.shields.io/npm/v/dsh-dafeiyu?label=npm)](https://www.npmjs.com/package/dsh-dafeiyu) · [![GitHub Release](https://img.shields.io/github/v/release/QCYTSN/dsh-dafeiyu?label=GitHub%20Release)](https://github.com/QCYTSN/dsh-dafeiyu/releases)
+
 </div>
 
 ![DSH BigFish showing live project status](docs/images/dsh-bigfish-running.png)
@@ -18,6 +20,18 @@ frameless companion stays above other Windows apps, so you can see whether DSH i
 editing, testing, waiting, or finished while working in VS Code, a browser, or File Explorer.
 
 > Current version: `0.1.0` · Windows / WSL2 Alpha
+
+## Follow updates
+
+- The latest version always matches npm [`latest`](https://www.npmjs.com/package/dsh-dafeiyu) and [GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases) (which also carry the `.tgz` archives); the badges above update automatically.
+- **Starring is just a bookmark — GitHub will not notify you of updates.** To get notified about what changed:
+  1. Open the repo and choose **Watch → Custom → Releases**;
+  2. or subscribe to the Releases feed: <https://github.com/QCYTSN/dsh-dafeiyu/releases.atom>
+- To upgrade an installed copy: fully exit DSH, then run
+  ```powershell
+  dsh plugin --profile web update dsh-dafeiyu
+  ```
+  and start DSH again.
 
 ## What is it for?
 

@@ -8,6 +8,8 @@
 
 [English](README_EN.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [下载最新版本](https://github.com/QCYTSN/dsh-dafeiyu/releases) · [更新日志](CHANGELOG.md) · [更新与回退](docs/UPDATING.md) · [验收记录](docs/ACCEPTANCE.md)
 
+[![npm](https://img.shields.io/npm/v/dsh-dafeiyu?label=npm)](https://www.npmjs.com/package/dsh-dafeiyu) · [![GitHub Release](https://img.shields.io/github/v/release/QCYTSN/dsh-dafeiyu?label=GitHub%20Release)](https://github.com/QCYTSN/dsh-dafeiyu/releases)
+
 </div>
 
 ![DSH 大肥鱼在真实任务中显示项目状态](docs/images/dsh-bigfish-running.png)
@@ -17,6 +19,18 @@ DSH 大肥鱼不是一个需要单独启动的桌宠应用。它由 DSH 插件�
 VS Code、浏览器或文件管理器，也能知道 DSH 当前在思考、修改、测试、等待还是已经完成。
 
 > 当前版本：`0.1.0` · Windows / WSL2 Alpha
+
+## 关注最新进展
+
+- 最新版本永远以 [npm `latest`](https://www.npmjs.com/package/dsh-dafeiyu) 和 [GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases) 为准（Releases 里同时提供 `.tgz` 安装包）；顶部的版本徽章会自动更新。
+- 给仓库 **Star 只是收藏，不会收到更新通知**。想第一时间知道「更新了什么」：
+  1. 打开仓库点 **Watch → Custom → Releases**，只订阅 Release 通知；
+  2. 或直接订阅 Releases 的 feed：<https://github.com/QCYTSN/dsh-dafeiyu/releases.atom>
+- 已安装用户升级：完全退出 DSH 后执行
+  ```powershell
+  dsh plugin --profile web update dsh-dafeiyu
+  ```
+  然后重新启动 DSH 即可。
 
 ## 它有什么用？
 
