@@ -59,6 +59,16 @@ git push origin v0.1.0-alpha.12
 Prerelease versions automatically use the npm `alpha` tag. Stable versions use `latest`. The
 workflow rejects a Git tag that does not exactly match the version in `package.json`.
 
+While every published version is an `alpha` prerelease, keep the npm `latest` dist-tag pointing
+at the newest DSH rc.7-compatible build. `dsh plugin --profile web add dsh-dafeiyu` (without
+`@alpha`) installs whatever `latest` points to, and a stale `latest` replayed the "other plugins
+don't work" bug because old prereleases predate the rc.7 keyed-slot fix. After any alpha publish,
+move it explicitly:
+
+```bash
+npm dist-tag add dsh-dafeiyu@0.1.0-alpha.15 latest
+```
+
 ## Failure and retry behavior
 
 - A test or Windows build failure stops the release before npm publishing.

@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.0-alpha.15
+
+Fault isolation and robustness hardening so the pet can never take down
+other plugins or the whole DSH host.
+
+### Fixed
+
+- Host-side `session/event` and `session/disposed` listeners are now exception-isolated,
+  so a single bad event from DSH can no longer throw into the shared bus and stop every
+  other subscriber (which previously could present as "installing the pet broke other
+  plugins")
+- The bundled web client registers its settings card inside a fault-isolated guard: if DSH
+  changes the slot contract again, only the BigFish card is lost instead of the whole WebUI
+  failing to load
+- Helper pipe errors (EPIPE) are now swallowed on stdin/stdout/stderr so a dead helper can
+  never crash the DSH host process with an unhandled `error` event
+- The bounded-restart guard now also covers helpers that spawn successfully but die before
+  sending `READY`, instead of only missing/broken binaries (no more unbounded restart loops)
+- README download links point at `/releases` instead of `/releases/latest`, which returned
+  404 while every published release is a pre-release
+
+### Release engineering
+
+- Added GitHub Actions trusted publishing: the Windows Helper is built and smoke-tested on Windows,
+  while npm publishing uses short-lived OIDC credentials instead of local npm login state
+- Added retry-safe npm archive verification and automatic GitHub Release attachment publishing
+
 ## 0.1.0-alpha.13
 
 
@@ -41,14 +68,6 @@ Reliability hardening.
 - Added regression coverage for the bounded retry behavior
 
 
-
-## Unreleased
-
-### Release engineering
-
-- Added GitHub Actions trusted publishing: the Windows Helper is built and smoke-tested on Windows,
-  while npm publishing uses short-lived OIDC credentials instead of local npm login state
-- Added retry-safe npm archive verification and automatic GitHub Release attachment publishing
 
 ## 0.1.0-alpha.12
 
