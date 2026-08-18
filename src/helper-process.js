@@ -136,6 +136,15 @@ export class HelperProcess {
     })
     child.once('error', (error) => {
       this.logger.error?.(`dsh-dafeiyu helper failed to start: ${error.message}`)
+      if (this.child !== child) return
+      this.child = undefined
+      this.spawned = false
+      this.#clearHeartbeat()
+      this.#clearStartupTimer()
+      if (!this.stopping && !this.restartSuppressed) {
+        this.logger.warn?.(`dsh-dafeiyu helper failed to start; scheduling restart`)
+        this.#scheduleRestart()
+      }
     })
     child.once('exit', (code, signal) => {
       if (this.child !== child) return

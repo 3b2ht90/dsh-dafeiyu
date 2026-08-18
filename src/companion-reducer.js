@@ -43,7 +43,7 @@ function toolCallIdOf(event, fallback = '') {
 
 function isUserQuestionTool(name) {
   const value = String(name || '').toLowerCase()
-  return /ask.*user.*question|request.*user.*input|user[-_/.:]?questions?/u.test(value)
+  return /ask.*user.*question|request.*user.*input|user[-_/.:]?questions?|approval|approve|permission|authorize|authori[sz]e|consent|review|allow/.test(value)
 }
 
 function sessionIdOf(session) {
@@ -136,6 +136,7 @@ export class CompanionReducer {
         record.turnActive = true
         record.openTools.clear()
         record.waitingCallId = undefined
+        record.waitingApprovalId = undefined
         record.task = undefined
         record.progress = undefined
         this.#update(record, CompanionState.THINKING, {
@@ -194,6 +195,22 @@ export class CompanionReducer {
       case 'turn/end':
         return this.#turnEnd(record, event)
 
+      case 'approval/asked': {
+        const id = String(event.data?.id ?? '')
+        const toolName = String(event.data?.toolName ?? 'approval')
+        record.waitingApprovalId = id
+        this.#update(record, CompanionState.WAITING, {
+          phase: 'approval',
+          stage: '等待审批',
+          toolName,
+          message: statusCopy('approval', event.seq),
+        })
+        return this.#render()
+      }
+
+      case 'approval/decided':
+        return this.#approvalDecided(record, event)
+
       default:
         return []
     }
@@ -217,6 +234,14 @@ export class CompanionReducer {
     if (!record.waitingCallId) return []
     record.openTools.delete(record.waitingCallId)
     record.waitingCallId = undefined
+    return this.#resumeAfterTool(record, event)
+  }
+
+
+  #approvalDecided(record, event) {
+    const id = String(event.data?.id ?? '')
+    if (!record.waitingApprovalId || id !== record.waitingApprovalId) return []
+    record.waitingApprovalId = undefined
     return this.#resumeAfterTool(record, event)
   }
 
@@ -291,6 +316,7 @@ export class CompanionReducer {
     record.turnActive = false
     record.openTools.clear()
     record.waitingCallId = undefined
+    record.waitingApprovalId = undefined
     const kind = String(event.data?.reason?.kind ?? 'completed')
 
     if (kind === 'blocked') {
@@ -358,6 +384,7 @@ export class CompanionReducer {
       turnActive: false,
       openTools: new Map(),
       waitingCallId: undefined,
+      waitingApprovalId: undefined,
       task: undefined,
       progress: undefined,
       project: undefined,

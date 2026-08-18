@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.0-alpha.13
+
+
+
+Bug fixes and DSH rc.7 compatibility hardening.
+
+
+
+### Fixed
+
+
+
+- Helper now clears a failed spawn and schedules a restart, so a missing/broken Helper no longer leaves the plugin wedged
+
+- Added `approval/asked` / `approval/decided` handling so permission approvals show a “等待审批” desktop prompt instead of staying on “工作中”
+
+- `pluginVersion` now reads from `package.json` instead of a stale hardcoded version
+
+- README current-version badges updated
+
+- Added a regression test that actually exercises the DSH rc.7 keyed slot registration
+
+
+
 ## Unreleased
 
 ### Release engineering

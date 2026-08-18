@@ -17,7 +17,7 @@ stops its native Helper, and provides the Agent events that drive it. The transp
 frameless companion stays above other Windows apps, so you can see whether DSH is thinking,
 editing, testing, waiting, or finished while working in VS Code, a browser, or File Explorer.
 
-> Current version: `0.1.0-alpha.11` · Windows / WSL2 Alpha
+> Current version: `0.1.0-alpha.13` · Windows / WSL2 Alpha
 
 ## What is it for?
 

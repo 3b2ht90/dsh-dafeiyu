@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import Schema from '@deepseek-ai/schemastery'
 import { CompanionReducer } from './companion-reducer.js'
 import { HelperProcess } from './helper-process.js'
@@ -6,6 +7,9 @@ import {
   CompanionState,
   createMessage,
 } from './protocol.js'
+
+const require = createRequire(import.meta.url)
+const pkg = require('../package.json')
 
 export const name = 'dsh-dafeiyu'
 export const inject = ['sessions']
@@ -189,7 +193,7 @@ function mount(ctx, config = {}, eventCtx = ctx) {
     bridge.send(createMessage(CompanionMessageKind.HELLO, {
       state: CompanionState.IDLE,
       host: 'deepseek-harness',
-      pluginVersion: '0.1.0-alpha.7',
+      pluginVersion: pkg.version,
       message: 'BigFish connected to DSH',
     }))
     bridge.send(createMessage(CompanionMessageKind.STATE, {

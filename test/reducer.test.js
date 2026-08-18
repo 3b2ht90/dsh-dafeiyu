@@ -147,6 +147,29 @@ test('live subagent setting preserves top-level session state', () => {
   assert.equal(restored.task, '保留当前进度')
 })
 
+test('approval events show waiting and resume after the decision', () => {
+  const reducer = new CompanionReducer()
+  reducer.handle(session, event('turn/start', { turn: 1 }, 1))
+
+  const [asked] = reducer.handle(session, event('approval/asked', {
+    id: 'approval-1',
+    toolName: 'bash',
+  }, 2))
+  assert.equal(asked.state, CompanionState.WAITING)
+  assert.equal(asked.stage, '等待审批')
+
+  assert.deepEqual(reducer.handle(session, event('approval/decided', {
+    id: 'unrelated',
+    outcome: 'granted',
+  }, 3)), [])
+
+  const [resumed] = reducer.handle(session, event('approval/decided', {
+    id: 'approval-1',
+    outcome: 'granted',
+  }, 4))
+  assert.equal(resumed.state, CompanionState.THINKING)
+})
+
 test('tool categories keep renderer semantics independent from DSH tool names', () => {
   assert.equal(toolActivity('functions.search_files'), 'searching')
   assert.equal(toolActivity('apply_patch'), 'editing')
