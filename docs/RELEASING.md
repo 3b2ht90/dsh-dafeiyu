@@ -34,40 +34,55 @@ Before publishing:
 1. Update the version in `package.json`. npm versions are immutable and cannot be reused.
 2. Add the release notes to `CHANGELOG.md`.
 3. Update the current version in `README.md` and `README_EN.md`.
-4. Commit and push the changes to `main`.
+4. Commit the changes on `main` and leave the worktree clean.
 
-## Publish from the GitHub interface
+## Recommended release command
 
-1. Open **Actions → Publish package**.
-2. Select **Run workflow** and choose `main`.
-3. Use `alpha` for prereleases such as `0.1.0-alpha.12`; use `latest` only for stable versions.
-4. Start the workflow.
+Use the repository release helper instead of separate `git push` and `git push <tag>` commands.
+It verifies the release state and atomically pushes `main` together with the version tag, so either
+both refs arrive on GitHub or neither does.
 
-The workflow builds and tests the Windows Helper, publishes the npm package, moves the selected npm
-distribution tag, creates a matching `v<version>` Git tag, and attaches the verified `.tgz` archive
-to a GitHub Release.
+On Windows:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/push-release.ps1
+```
+
+From WSL:
+
+```bash
+bash scripts/push-release.sh
+```
+
+The WSL entry point deliberately invokes Windows Git. This shares the Windows Git Credential
+Manager login and Windows network path, avoiding both ephemeral WSL credentials and the GnuTLS
+connection failures seen with WSL Linux Git. Neither command needs an npm login.
+
+To validate without pushing, append `-DryRun`.
 
 ## Publish by pushing a version tag
 
-After the version commit is on `main`, the same workflow can be triggered from Windows or WSL:
-
-```bash
-git tag v0.1.0-alpha.12
-git push origin v0.1.0-alpha.12
-```
+The helper creates the annotated `v<package version>` tag and triggers the existing workflow. The
+equivalent low-level operation is an atomic push of `main` and that tag. Do not move or reuse a
+release tag.
 
 Prerelease versions automatically use the npm `alpha` tag. Stable versions use `latest`. The
 workflow rejects a Git tag that does not exactly match the version in `package.json`.
 
-While every published version is an `alpha` prerelease, keep the npm `latest` dist-tag pointing
-at the newest DSH rc.7-compatible build. `dsh plugin --profile web add dsh-dafeiyu` (without
-`@alpha`) installs whatever `latest` points to, and a stale `latest` replayed the "other plugins
-don't work" bug because old prereleases predate the rc.7 keyed-slot fix. After any alpha publish,
-move it explicitly:
+The **Run workflow** button remains useful for maintainers diagnosing CI, but it is not the normal
+release path and it does not replace the repository's Git tag/history checks.
+
+`dsh plugin --profile web add dsh-dafeiyu` (without `@alpha`) installs whatever npm's `latest`
+dist-tag points to. npm trusted publishing provides short-lived OIDC credentials only for package
+publishing; npm does not support using that OIDC exchange for `npm dist-tag`. If the package owner
+intentionally wants an alpha to become the default install, promote it separately from an
+authenticated owner session:
 
 ```bash
 npm dist-tag add dsh-dafeiyu@0.1.0-alpha.15 latest
 ```
+
+Do not place a long-lived npm token in WSL merely to perform this promotion.
 
 ## Failure and retry behavior
 
