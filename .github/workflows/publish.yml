@@ -156,14 +156,14 @@ jobs:
 
       - name: Publish package to npm
         if: steps.release.outputs.publish_needed == 'true'
-        run: npm publish "${{ steps.release.outputs.archive }}" --tag "${{ steps.release.outputs.dist_tag }}" --access public
+        run: npm publish "./${{ steps.release.outputs.archive }}" --tag "${{ steps.release.outputs.dist_tag }}" --access public
 
       - name: Create or update GitHub Release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.release.outputs.version }}
-          ARCHIVE: ${{ steps.release.outputs.archive }}
+          ARCHIVE: ./${{ steps.release.outputs.archive }}
         run: |
           set -euo pipefail
           release_tag="v${VERSION}"
