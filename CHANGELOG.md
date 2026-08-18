@@ -24,6 +24,24 @@ Bug fixes and DSH rc.7 compatibility hardening.
 
 
 
+## 0.1.0-alpha.14
+
+
+
+Reliability hardening.
+
+
+
+### Fixed
+
+
+
+- Helper start failures are now bounded: after `maxStartFailures` (default 5) consecutive failed spawns the plugin stops retrying instead of looping forever, protecting DSH and logs from a missing/broken Helper
+
+- Added regression coverage for the bounded retry behavior
+
+
+
 ## Unreleased
 
 ### Release engineering

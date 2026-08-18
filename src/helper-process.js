@@ -95,6 +95,7 @@ export class HelperProcess {
     this.hasEverSpawned = false
     this.stopping = false
     this.restartSuppressed = false
+    this.startFailures = 0
     this.restartTimer = undefined
     this.heartbeatTimer = undefined
     this.startupTimer = undefined
@@ -125,6 +126,7 @@ export class HelperProcess {
     })
     this.child = child
     child.once('spawn', () => {
+      this.startFailures = 0
       const startupTimeoutMs = this.options.startupTimeoutMs ?? 60000
       this.startupTimer = setTimeout(() => {
         if (this.child === child && !this.spawned) {
@@ -139,10 +141,17 @@ export class HelperProcess {
       if (this.child !== child) return
       this.child = undefined
       this.spawned = false
+      this.startFailures += 1
       this.#clearHeartbeat()
       this.#clearStartupTimer()
       if (!this.stopping && !this.restartSuppressed) {
-        this.logger.warn?.(`dsh-dafeiyu helper failed to start; scheduling restart`)
+        const maxFailures = this.options.maxStartFailures ?? 5
+        if (this.startFailures >= maxFailures) {
+          this.restartSuppressed = true
+          this.logger.error?.(`dsh-dafeiyu helper failed to start ${this.startFailures} times; giving up`)
+          return
+        }
+        this.logger.warn?.(`dsh-dafeiyu helper failed to start; scheduling restart (${this.startFailures}/${maxFailures})`)
         this.#scheduleRestart()
       }
     })

@@ -67,7 +67,7 @@ test('unexpected helper exit restarts and replays the latest state snapshot', as
   await rm(directory, { recursive: true, force: true })
 })
 
-test('startup failure clears the failed process and schedules a retry', async () => {
+test('startup failure clears the failed process and gives up after the retry limit', async () => {
   let failures = 0
   const logger = {
     debug() {},
@@ -79,13 +79,19 @@ test('startup failure clears the failed process and schedules a retry', async ()
     command: 'dsh-dafeiyu-helper-does-not-exist',
     headless: true,
     heartbeatMs: 0,
-    restartDelayMs: 30,
+    restartDelayMs: 20,
+    maxStartFailures: 2,
   }, logger)
   bridge.start()
-  // The first spawn fails; the scheduler must retry, so we should see at least
-  // two start failures without the child staying stuck in memory.
+  // The first spawn fails; the scheduler should retry once, then give up.
   await waitFor(() => failures >= 2)
+  await waitFor(() => bridge.restartSuppressed === true)
+  await waitFor(() => bridge.child === undefined)
+
+  const failuresAfterGiveUp = failures
   await new Promise((resolve) => setTimeout(resolve, 100))
+  assert.equal(failures, failuresAfterGiveUp)
+  assert.equal(bridge.child, undefined)
   bridge.stop('startup-failure-test-complete')
 })
 
