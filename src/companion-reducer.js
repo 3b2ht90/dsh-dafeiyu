@@ -99,16 +99,24 @@ function cleanProjectName(value) {
 }
 
 function projectNameOf(session, event) {
+  // Prefer the freshest "what am I working on" signal. The session header
+  // (title/name/cwd) is frozen when the session starts, so after a project
+  // folder is renamed mid-run the header still reports the old path/name while
+  // the live working directory (or the step's own cwd/projectName) already
+  // points at the new folder. Keeping the stale header at the front is why the
+  // bubble kept showing the old name. Order: explicit step projectName, the
+  // session's live cwd, then progressively older cwd snapshots, and only then
+  // the human labels which can lag behind a rename.
   const candidates = [
-    session?.header?.title,
-    session?.header?.name,
-    session?.title,
-    session?.name,
-    session?.header?.cwd,
+    event?.data?.projectName,
     session?.cwd,
     session?.context?.cwd,
-    event?.data?.projectName,
+    session?.header?.cwd,
     event?.data?.cwd,
+    session?.title,
+    session?.name,
+    session?.header?.title,
+    session?.header?.name,
   ]
   return candidates.map(cleanProjectName).find(Boolean)
 }

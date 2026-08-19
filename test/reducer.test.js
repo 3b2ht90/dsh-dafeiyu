@@ -318,3 +318,26 @@ test('session records are bounded even if DSH never emits session/disposed', () 
   assert.equal(reducer.sessions.has('session-1'), false)
   assert.equal(reducer.sessions.has('session-7'), true)
 })
+
+test('project name follows a folder rename instead of the stale session header', () => {
+  // The header is frozen at session creation with the old name; after the
+  // folder is renamed, DSH keeps the live session.cwd pointing at the new one.
+  let liveSession = { header: { id: 'renamed', title: 'old-name', cwd: 'D:\\work\\old-name' } }
+  const reducer = new CompanionReducer()
+
+  const [afterStart] = reducer.handle(liveSession, event('turn/start', { turn: 1 }, 1))
+  assert.equal(afterStart.project, 'old-name')
+
+  // Rename: header stays stale, but the live session working directory moves.
+  liveSession = { ...liveSession, cwd: 'D:\\work\\new-name' }
+  const [afterRename] = reducer.handle(liveSession, event('tool/call', { callId: 'p1', name: 'read_file' }, 2))
+  assert.equal(afterRename.project, 'new-name')
+
+  // An explicit projectName on the step wins over every cwd snapshot.
+  const [withExplicit] = reducer.handle(liveSession, event('tool/call', {
+    callId: 'p2',
+    name: 'read_file',
+    projectName: 'explicit-project',
+  }, 3))
+  assert.equal(withExplicit.project, 'explicit-project')
+})

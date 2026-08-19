@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.1
+
+Fixes for WSL reliability and project renames.
+
+### Fixed
+
+- WSL visual mode now launches the bundled Windows Helper through the absolute
+  `C:\Windows\System32\cmd.exe` path (resolved via `wslpath`), falling back to the bare
+  name only if that fails. Previously it depended on `cmd.exe` being on the WSL PATH, so
+  WSL installs without System32 in PATH could never start the pet.
+- The status bubble now shows the current project name after a folder rename instead of
+  the stale name frozen in the session header: the freshest working-directory source
+  (live session cwd / step projectName) wins over the older header title/name.
+- Added regression tests for both fixes.
+
 ## 0.1.0
 
 Promoted to stable. Same hardened build that shipped as 0.1.0-alpha.15, now the default
