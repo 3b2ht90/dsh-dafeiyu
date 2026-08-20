@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
 import test from 'node:test'
 import { defaultCmdExe, resolveHelperLaunch } from '../src/helper-process.js'
 
@@ -38,10 +37,19 @@ test('WSL visual mode falls back to the bare cmd.exe if the absolute path cannot
   })
 })
 
-test('defaultCmdExe returns an absolute cmd.exe path on this WSL host', () => {
-  const resolved = defaultCmdExe()
-  assert.ok(typeof resolved === 'string' && resolved.length > 0)
-  assert.ok(existsSync(resolved), `resolved cmd.exe must exist: ${resolved}`)
+test('defaultCmdExe resolves the absolute Windows cmd.exe via wslpath when it exists', () => {
+  const resolved = defaultCmdExe({
+    wslpath: () => '/mnt/c/Windows/System32/cmd.exe',
+    fileExists: () => true,
+  })
+  assert.equal(resolved, '/mnt/c/Windows/System32/cmd.exe')
+})
+
+test('defaultCmdExe falls back to the bare cmd.exe when wslpath cannot resolve it', () => {
+  assert.equal(defaultCmdExe({
+    wslpath: () => { throw new Error('wslpath missing') },
+    fileExists: () => true,
+  }), 'cmd.exe')
 })
 
 test('WSL headless mode stays on Linux Python for Linux event-log paths', () => {

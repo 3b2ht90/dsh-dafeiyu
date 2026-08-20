@@ -1,8 +1,12 @@
 # Changelog
 
-## 0.1.1
+## 0.1.2
 
 Fixes for WSL reliability and project renames.
+
+> Note: the v0.1.1 tag was blocked before npm publishing by a Windows-only test
+> (the cmd.exe resolution test asserted a host path). The test is now platform-neutral;
+> the same fixes ship here as 0.1.2.
 
 ### Fixed
 

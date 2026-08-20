@@ -34,18 +34,22 @@ function toWindowsPath(path) {
   return execFileSync('wslpath', ['-w', path], { encoding: 'utf8' }).trim()
 }
 
-function defaultCmdExe() {
+function defaultCmdExe({ wslpath = defaultWslPath, fileExists = existsSync } = {}) {
   // WSL visual mode launches the bundled EXE through Windows cmd.exe. cmd.exe
   // is usually NOT on the WSL PATH (System32 is not appended by default), so
   // never rely on `cmd.exe` being resolvable: convert the Windows absolute path
   // with wslpath and only fall back to the bare name as a last resort.
   try {
-    const candidate = execFileSync('wslpath', ['-u', 'C:\\Windows\\System32\\cmd.exe'], { encoding: 'utf8' }).trim()
-    if (candidate && existsSync(candidate)) return candidate
+    const candidate = wslpath('C:\\Windows\\System32\\cmd.exe')
+    if (candidate && fileExists(candidate)) return candidate
   } catch {
     // Fall through to the bare-name fallback below.
   }
   return 'cmd.exe'
+}
+
+function defaultWslPath(...args) {
+  return execFileSync('wslpath', args, { encoding: 'utf8' }).trim()
 }
 
 function resolveHelperLaunch({
