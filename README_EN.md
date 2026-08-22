@@ -86,6 +86,8 @@ When multiple tasks are active, the status bubble lists them at the same time.
 ## Requirements
 
 - Windows 10/11 x64, or WSL2 (runs the desktop Helper through Windows interop)
+- macOS 12.0+ (Apple Silicon or Intel) — the next release will bundle the
+  native Helper with no Python / PySide6 requirement (npm 0.1.3 does not yet)
 - A working DeepSeek Harness WebUI installation
 - A DSH CLI that supports `plugin --profile web`
 - the stable `dsh-dafeiyu` from npm (or `dsh-dafeiyu@alpha` to try prereleases early), or a `.tgz` archive from GitHub Releases
@@ -129,6 +131,46 @@ When DSH runs inside WSL2, run the same install command in the WSL terminal. The
 launches the bundled Windows Helper through `cmd.exe`; no manual `chmod`, Python, or
 PySide6 installation is required inside WSL. The current target is WSL2 on Windows x64,
 not ordinary Linux, remote Linux, or containers.
+
+### macOS users (Apple Silicon / Intel, macOS 12.0+)
+
+> Release status: the native macOS Helper is currently **Unreleased** on
+> `main`; npm `latest` 0.1.3 does not contain it. The regular-user install
+> commands below apply after the next release is published.
+
+Installation on macOS is the same as Windows, just in the Terminal with macOS
+paths. The release bundle ships a native Helper — **no Python, PySide6 or Xcode
+required**.
+
+In Terminal, `cd` into your DSH installation directory (for example
+`~/deepseek-harness`):
+
+```bash
+cd ~/deepseek-harness
+```
+
+Install the current stable release from npm:
+
+```bash
+pnpm exec dsh plugin --profile web add dsh-dafeiyu
+```
+
+If `dsh` is already available globally:
+
+```bash
+dsh plugin --profile web add dsh-dafeiyu
+```
+
+Alternatively, download `dsh-dafeiyu-<version>.tgz` from
+[GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases) (do not
+extract it) and install it:
+
+```bash
+pnpm exec dsh plugin --profile web add ~/Downloads/dsh-dafeiyu-<version>.tgz
+```
+
+Then launch DSH WebUI normally; BigFish is started automatically. Do not start
+the Helper yourself.
 
 ### 3. GitHub Release fallback
 
@@ -296,6 +338,45 @@ DSH to bring it back. To disable it permanently, turn off “Enable BigFish” i
 - Does not monitor keyboard input or other app activity
 - Does not open a new network port; the settings card reuses DSH's local Web service
 - Follows the most recently active top-level DSH session by default
+
+## Native macOS port (AI-assisted)
+
+> **Note**: the native macOS helper (`runtime/bin/darwin/dsh-dafeiyu-helper.app`)
+> and the Swift sources under `native/macos/` were **generated with AI
+> assistance**, reviewed and debugged by a human before being merged. They
+> replace the original Qt/PySide6 and PyObjC prototypes, which were unstable
+> and crash-prone on macOS.
+
+What was redone:
+
+- **Runtime rewrite**: the Qt/PySide6 window (the visual path of
+  `runtime/helper.py`) and the PyObjC native-window prototype were rewritten as
+  a **pure Swift + AppKit** implementation. Python, PySide6, PyObjC and
+  conda environments are no longer required.
+- **Animation engine port**: the pure logic of `runtime/animation_model.py`
+  (clips, pulse, overlay, idle micro-motions, crossfade, procedural motion)
+  was ported line-by-line to Swift with behavior parity with the Windows/Qt
+  version.
+- **Above-fullscreen window**: Apple's official window capabilities
+  (`canJoinAllSpaces` + `fullScreenAuxiliary` + `.floating` level), re-asserted
+  every 2 seconds so the pet stays in front of full-screen apps.
+- **Permissions**: notifications via `UNUserNotificationCenter` (SUCCESS/ERROR
+  alerts, falling back to beep + shake when denied); Accessibility via
+  `AXIsProcessTrustedWithOptions` with a System Settings deep link in the
+  context menu.
+- **Stability fixes**: EPIPE guards on the helper's stdin/stdout/stderr so a
+  helper crash only restarts the helper itself, never the dsh server.
+- **Rendering/interaction fixes**: fixed the upside-down image in the flipped
+  view, made dragging track the cursor 1:1 with absolute coordinates, and kept
+  the character and the status bubble in sync while dragging.
+- **Layout migration**: on first launch the old Qt top-left coordinates are
+  migrated to AppKit bottom-left, still reading/writing the same `layout.json`.
+
+Compatibility:
+
+- **Architecture**: Universal binary (Apple Silicon arm64 + Intel x86_64)
+- **System**: macOS 12.0+
+- Build and install instructions: [native/macos/README.md](native/macos/README.md)
 
 ## Development and tests
 
