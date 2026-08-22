@@ -2,7 +2,7 @@
 
 # DSH BigFish 🐋
 
-**A desktop companion that lives on Windows and reacts to real DeepSeek Harness activity.**
+**A desktop companion that reacts to real DeepSeek Harness activity.**
 
 Enabled by DSH, owned by the DSH lifecycle, rendered on the desktop.
 
@@ -16,10 +16,10 @@ Enabled by DSH, owned by the DSH lifecycle, rendered on the desktop.
 
 DSH BigFish is not a standalone desktop-pet application. DSH enables the plugin, starts and
 stops its native Helper, and provides the Agent events that drive it. The transparent,
-frameless companion stays above other Windows apps, so you can see whether DSH is thinking,
+frameless companion stays above other desktop apps, so you can see whether DSH is thinking,
 editing, testing, waiting, or finished while working in VS Code, a browser, or File Explorer.
 
-> Current version: `0.1.3` · Windows / WSL2 Alpha
+> Current version: `0.1.4` · Windows / WSL2 / Linux x64 · experimental macOS support
 
 ## Follow updates
 
@@ -35,7 +35,7 @@ editing, testing, waiting, or finished while working in VS Code, a browser, or F
 
 ## What is it for?
 
-- **See DSH status away from the WebUI:** BigFish stays on top of the Windows desktop.
+- **See DSH status away from the WebUI:** BigFish stays on top of the desktop.
 - **React to real Agent events:** it does not inspect the screen or mistake activity in other apps for DSH work.
 - **Show useful, compact context:** the card can display the project, current phase, active step, and real todo progress.
 - **Feel alive without becoming noisy:** thinking, searching, editing, commands, testing, waiting, success, and errors have distinct motion and friendly copy.
@@ -86,14 +86,14 @@ When multiple tasks are active, the status bubble lists them at the same time.
 ## Requirements
 
 - Windows 10/11 x64, or WSL2 (runs the desktop Helper through Windows interop)
-- macOS 12.0+ (Apple Silicon or Intel) — the next release will bundle the
-  native Helper with no Python / PySide6 requirement (npm 0.1.3 does not yet)
+- Linux x64 desktop (native X11, or XWayland)
+- macOS 12.0+ (Apple Silicon or Intel, experimental support)
 - A working DeepSeek Harness WebUI installation
 - A DSH CLI that supports `plugin --profile web`
 - the stable `dsh-dafeiyu` from npm (or `dsh-dafeiyu@alpha` to try prereleases early), or a `.tgz` archive from GitHub Releases
 
-Regular users do **not** need Python or PySide6 and should not launch
-`dsh-dafeiyu-helper.exe` manually. The Windows Helper is bundled in the release archive.
+Regular users do **not** need Python or PySide6 and should not launch the Helper
+manually. Windows, Linux x64, and macOS Helpers are bundled in the release archive.
 
 The current Alpha build uses Simplified Chinese for the settings UI and desktop status copy.
 
@@ -129,14 +129,20 @@ To try new features before they are stable, install from the `@alpha` tag instea
 
 When DSH runs inside WSL2, run the same install command in the WSL terminal. The plugin
 launches the bundled Windows Helper through `cmd.exe`; no manual `chmod`, Python, or
-PySide6 installation is required inside WSL. The current target is WSL2 on Windows x64,
-not ordinary Linux, remote Linux, or containers.
+PySide6 installation is required inside WSL. The current WSL target is Windows x64.
+
+Regular Linux x64 desktop users run the same install command. Version `0.1.4` bundles
+the Linux Helper with no system Python requirement. A graphical desktop session is
+required; native X11 and XWayland are supported. Headless remote Linux and containers
+are not display targets for this release.
 
 ### macOS users (Apple Silicon / Intel, macOS 12.0+)
 
-> Release status: the native macOS Helper is currently **Unreleased** on
-> `main`; npm `latest` 0.1.3 does not contain it. The regular-user install
-> commands below apply after the next release is published.
+> Version `0.1.4` introduces the native macOS Helper as experimental support.
+> CI verifies its universal architecture, AppKit rendering, and process lifecycle;
+> Apple Silicon experience will continue to be validated through user feedback.
+> The app currently has an ad-hoc signature, not a Developer ID signature or
+> notarization, so Gatekeeper may block browser-downloaded archives.
 
 Installation on macOS is the same as Windows, just in the Terminal with macOS
 paths. The release bundle ships a native Helper — **no Python, PySide6 or Xcode

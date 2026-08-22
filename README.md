@@ -2,7 +2,7 @@
 
 # DSH 大肥鱼 🐋
 
-**住在 Windows 桌面上、由 DeepSeek Harness 真实工作状态驱动的 Agent 伴侣。**
+**住在桌面上、由 DeepSeek Harness 真实工作状态驱动的 Agent 伴侣。**
 
 入口属于 DSH，生命周期属于 DSH，显示层属于桌面。
 
@@ -18,7 +18,7 @@ DSH 大肥鱼不是一个需要单独启动的桌宠应用。它由 DSH 插件�
 一起启动和退出，并以透明、无边框、始终置顶的原生窗口显示在桌面上。即使切换到
 VS Code、浏览器或文件管理器，也能知道 DSH 当前在思考、修改、测试、等待还是已经完成。
 
-> 当前版本：`0.1.3` · Windows / WSL2 Alpha
+> 当前版本：`0.1.4` · Windows / WSL2 / Linux x64 · macOS 实验性支持
 
 ## 关注最新进展
 
@@ -34,7 +34,7 @@ VS Code、浏览器或文件管理器，也能知道 DSH 当前在思考、修�
 
 ## 它有什么用？
 
-- **离开 DSH 页面也能看到状态**：大肥鱼始终显示在 Windows 桌面最上层。
+- **离开 DSH 页面也能看到状态**：大肥鱼始终显示在桌面最上层。
 - **反馈来自真实 Agent 事件**：不会读取屏幕，也不会把你在其他软件里的操作误判为 DSH 工作。
 - **展示足够但不过量的信息**：项目名、当前阶段、正在进行的步骤和真实待办进度会显示在状态卡上。
 - **有生命力但不打扰**：思考、查找、修改、执行、验证、等待、完成和错误都有对应动作与自然文案。
@@ -85,14 +85,14 @@ stateDiagram-v2
 ## 系统要求
 
 - Windows 10/11 x64，或 WSL2（通过 Windows interop 运行桌面 Helper）
-- macOS 12.0+（Apple Silicon 或 Intel）——下个发布包将内置原生 Helper，
-  无需安装 Python / PySide6（当前 npm 0.1.3 尚未包含）
+- Linux x64 桌面环境（原生 X11，或通过 XWayland 运行）
+- macOS 12.0+（Apple Silicon 或 Intel，实验性支持）
 - 已安装并能正常运行的 DeepSeek Harness WebUI
 - DSH CLI 中可以使用 `plugin --profile web` 命令
 - npm 上的稳定版 `dsh-dafeiyu`（或抢先测试的 `dsh-dafeiyu@alpha`），或 GitHub Release 中的 `.tgz` 安装包
 
-普通用户**不需要**安装 Python、PySide6 或单独运行
-`dsh-dafeiyu-helper.exe`。Windows Helper 已经包含在发布包里。
+普通用户**不需要**安装 Python、PySide6 或单独运行 Helper。Windows、Linux
+x64 和 macOS 的 Helper 都已经包含在发布包里。
 
 当前 Alpha 版的设置与桌面状态文案使用简体中文。
 
@@ -126,13 +126,18 @@ dsh plugin --profile web add dsh-dafeiyu
 
 如果 DSH 运行在 WSL2，请在 WSL 终端执行同一条安装命令。插件会自动通过
 `cmd.exe` 启动包内的 Windows Helper，不需要手动 `chmod`，也不需要在 WSL
-安装 Python 或 PySide6。当前支持范围是 Windows x64 上的 WSL2；普通 Linux、
-远程 Linux 和容器不是本版本的桌面显示目标。
+安装 Python 或 PySide6。当前支持范围是 Windows x64 上的 WSL2。
+
+普通 Linux x64 桌面用户也执行同一条安装命令。`0.1.4` 已内置 Linux Helper，
+无需系统 Python；需要可用的图形桌面会话，原生支持 X11，并可通过 XWayland
+运行。远程无桌面 Linux 和容器不是本版本的显示目标。
 
 ### macOS 用户（Apple Silicon / Intel，macOS 12.0+）
 
-> 发布状态：原生 macOS Helper 当前位于 `main` 的 **Unreleased**；已经发布的
-> npm `latest` 0.1.3 尚不包含它。下面的普通用户安装命令从下一版本发布后生效。
+> `0.1.4` 首次提供实验性的原生 macOS Helper。CI 已验证 Universal 架构、
+> AppKit 渲染和进程生命周期；Apple Silicon 实机体验将继续通过用户反馈验证。
+> 当前应用只有 ad-hoc 签名，尚未 Developer ID 签名或公证，浏览器下载的包可能
+> 被 Gatekeeper 拦截。
 
 macOS 的安装方式与 Windows 相同，只是换成「终端」和 macOS 路径。发布包
 内置原生 Helper，**不需要安装 Python、PySide6 或 Xcode**。
