@@ -28,6 +28,9 @@ except ImportError:
 
 PROTOCOL_VERSION = 1
 STATES = {"IDLE", "THINKING", "WORKING", "WAITING", "SUCCESS", "ERROR", "DISCONNECTED"}
+DRAG_RELEASE_MS = 300
+DRAG_DIZZY_MS = 840
+DRAG_PROTEST_MS = 300
 
 
 def bundle_root() -> Path:
@@ -229,6 +232,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             self.pet_x = 0
             self.pet_y = 0
             self.dragging = False
+            self.drag_chain_id = 0
             self.last_tick_ms = self._now_ms()
             self.fade_from_pixmap: QPixmap | None = None
             self.fade_started = 0.0
@@ -415,6 +419,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             if self.dragging:
                 return
             self.dragging = True
+            self.drag_chain_id += 1
             self.animation_timer.stop()
             self.micro_timer.stop()
             self._play_model_overlay("dragging", allow_fade=False, repaint=False)
@@ -434,6 +439,43 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             self.animation_timer.start(40 if self.reduced_motion else 20)
             if not self.reduced_motion:
                 self._schedule_micro()
+                self._run_drag_release_chain()
+
+        def _run_drag_release_chain(self) -> None:
+            """Play release -> dizzy -> protest, then hand back to the base state.
+
+            Every stage is a single-frame clip, so the chain is driven by timers;
+            any new grab (or a manifest without the stage clips) aborts quietly.
+            """
+            stages = (
+                ("dragging_release", DRAG_RELEASE_MS),
+                ("dragging_dizzy", DRAG_DIZZY_MS),
+                ("dragging_protest", DRAG_PROTEST_MS),
+            )
+            self.drag_chain_id += 1
+            token = self.drag_chain_id
+
+            def play(index: int) -> None:
+                if token != self.drag_chain_id or self.dragging:
+                    return
+                if index >= len(stages):
+                    self._clear_drag_overlay()
+                    return
+                clip_name, hold_ms = stages[index]
+                if not self._play_model_overlay(clip_name, allow_fade=False):
+                    return
+                QTimer.singleShot(hold_ms, lambda: play(index + 1))
+
+            QTimer.singleShot(0, lambda: play(0))
+
+        def _clear_drag_overlay(self) -> None:
+            if self.dragging:
+                return
+            previous_frame = self.model.frame
+            previous_clip = self.model.active_clip_name
+            self.model.clear_overlay()
+            self._sync_frame_transition(previous_frame, previous_clip)
+            self.update()
 
         def _schedule_micro(self) -> None:
             if self.reduced_motion:

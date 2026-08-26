@@ -12,7 +12,14 @@ from typing import Any
 
 
 STATES = {"IDLE", "THINKING", "WORKING", "WAITING", "SUCCESS", "ERROR", "DISCONNECTED"}
-NON_CROSSFADE_CLIPS = {"blink", "glance", "dragging"}
+NON_CROSSFADE_CLIPS = {
+    "blink",
+    "glance",
+    "dragging",
+    "dragging_release",
+    "dragging_dizzy",
+    "dragging_protest",
+}
 
 
 def crossfade_duration(previous_clip: str, current_clip: str) -> float | None:
