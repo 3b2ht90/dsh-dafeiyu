@@ -287,7 +287,7 @@ DSH persists these settings, so a normal plugin update does not require reconfig
 
 ## Desktop interactions
 
-- **Drag:** move BigFish; its position is saved automatically.
+- **Drag:** move BigFish; its position is saved automatically. Releasing it plays brief release, dizzy, and protest reactions, skipped automatically when reduced motion is enabled.
 - **Click or double-click:** trigger brief head-pat, poke, or tail reactions, then return to the latest DSH state.
 - **Right-click:** change size, bubble size, reduce motion, open WebUI, hide for now, or close for this run.
 - **Hide for now:** hides the window without disabling the plugin.
