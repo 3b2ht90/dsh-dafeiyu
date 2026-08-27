@@ -5,6 +5,7 @@
 ### Added
 
 - Display the reasoning effort that DSH actually applies to each request in the companion status detail, and keep it visible as the task moves between thinking, tool use, and waiting states.
+- Add four community-contributed dragging poses and a short release, dizzy, and protest reaction sequence, with reduced-motion fallback and interruption when the pet is grabbed again.
 
 ### Fixed
 

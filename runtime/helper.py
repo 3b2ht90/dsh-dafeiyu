@@ -31,6 +31,11 @@ STATES = {"IDLE", "THINKING", "WORKING", "WAITING", "SUCCESS", "ERROR", "DISCONN
 DRAG_RELEASE_MS = 300
 DRAG_DIZZY_MS = 840
 DRAG_PROTEST_MS = 300
+DRAG_RELEASE_STAGES = (
+    ("dragging_release", DRAG_RELEASE_MS),
+    ("dragging_dizzy", DRAG_DIZZY_MS),
+    ("dragging_protest", DRAG_PROTEST_MS),
+)
 
 
 def bundle_root() -> Path:
@@ -336,6 +341,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 self.animation_timer.setInterval(40 if self.reduced_motion else 20)
                 if self.reduced_motion:
                     self.micro_timer.stop()
+                    self._cancel_drag_release_chain()
                 else:
                     self._schedule_micro()
             sound_enabled = message.get("soundEnabled")
@@ -447,22 +453,18 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             Every stage is a single-frame clip, so the chain is driven by timers;
             any new grab (or a manifest without the stage clips) aborts quietly.
             """
-            stages = (
-                ("dragging_release", DRAG_RELEASE_MS),
-                ("dragging_dizzy", DRAG_DIZZY_MS),
-                ("dragging_protest", DRAG_PROTEST_MS),
-            )
             self.drag_chain_id += 1
             token = self.drag_chain_id
 
             def play(index: int) -> None:
                 if token != self.drag_chain_id or self.dragging:
                     return
-                if index >= len(stages):
+                if self.reduced_motion or index >= len(DRAG_RELEASE_STAGES):
                     self._clear_drag_overlay()
                     return
-                clip_name, hold_ms = stages[index]
+                clip_name, hold_ms = DRAG_RELEASE_STAGES[index]
                 if not self._play_model_overlay(clip_name, allow_fade=False):
+                    self._clear_drag_overlay()
                     return
                 QTimer.singleShot(hold_ms, lambda: play(index + 1))
 
@@ -476,6 +478,13 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             self.model.clear_overlay()
             self._sync_frame_transition(previous_frame, previous_clip)
             self.update()
+
+        def _cancel_drag_release_chain(self) -> None:
+            self.drag_chain_id += 1
+            if not self.dragging and self.model.active_clip_name in {
+                name for name, _ in DRAG_RELEASE_STAGES
+            }:
+                self._clear_drag_overlay()
 
         def _schedule_micro(self) -> None:
             if self.reduced_motion:
@@ -1072,6 +1081,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 self.animation_timer.setInterval(40 if self.reduced_motion else 20)
                 if self.reduced_motion:
                     self.micro_timer.stop()
+                    self._cancel_drag_release_chain()
                 else:
                     self._schedule_micro()
                 self._save_layout()

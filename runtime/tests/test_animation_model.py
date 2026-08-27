@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from runtime.animation_model import AnimationModel, crossfade_duration
+from runtime.helper import DRAG_RELEASE_STAGES
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,6 +74,13 @@ class AnimationModelTests(unittest.TestCase):
             self.assertEqual(len(clip["frames"]), 1, name)
             self.assertIs(clip["loop"], loop, name)
             self.assertTrue(model.play_overlay(name), name)
+
+    def test_drag_release_chain_matches_registered_stage_clips(self) -> None:
+        self.assertEqual(
+            [name for name, _ in DRAG_RELEASE_STAGES],
+            ["dragging_release", "dragging_dizzy", "dragging_protest"],
+        )
+        self.assertTrue(all(hold_ms > 0 for _, hold_ms in DRAG_RELEASE_STAGES))
 
     def test_single_frame_drag_stage_survives_advance_until_cleared(self) -> None:
         model = AnimationModel(MANIFEST)
