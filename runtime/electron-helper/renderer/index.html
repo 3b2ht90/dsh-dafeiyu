@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>3D 虎鲸 · dsh-dafeiyu</title>
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; width: 100%; height: 100%; }
+  #app { position: fixed; inset: 0; }
+  #app canvas { display: block; }
+
+  /* ==================== 状态卡片(复刻原版 dafeiyu 气泡) ==================== */
+  #status-card {
+    position: fixed;
+    top: 0px;
+    left: 3px;
+    right: 3px;
+    height: 84px;
+    box-sizing: border-box;
+    background: #fcfcfd;
+    border: 1px solid rgba(218, 221, 226, 0.8);
+    border-radius: 30px;
+    box-shadow: 0 4px 14px rgba(17, 24, 39, 0.14), 0 1px 3px rgba(17, 24, 39, 0.10);
+    display: flex;
+    align-items: center;
+    padding: 0 8px 0 14px;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #status-card.show { opacity: 1; transform: translateY(0) scale(1); }
+
+  #status-card .card-text {
+    flex: 1;
+    min-width: 0;
+    margin-right: 44px; /* 只给右侧图标留空间,文字尽量加宽 */
+  }
+  #status-card .card-title {
+    font: 600 10.5px/1.35 "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    color: #25282D;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;      /* 标题单行,超长省略 */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  #status-card .card-detail {
+    font: 9px/1.4 "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    color: #747981;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;      /* 最多两行,超长才截断 */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 5px;
+  }
+
+  /* 状态图标:圆形底色 + 符号 */
+  #status-card .card-icon {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  /* 思考/工作:三个跳动圆点 */
+  #status-card .dots { display: flex; gap: 3px; align-items: center; }
+  #status-card .dots i {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+    animation: dot-bounce 1.2s infinite ease-in-out;
+  }
+  #status-card .dots i:nth-child(2) { animation-delay: 0.15s; }
+  #status-card .dots i:nth-child(3) { animation-delay: 0.30s; }
+  @keyframes dot-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.55; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="status-card">
+    <div class="card-text">
+      <div class="card-title" id="card-title"></div>
+      <div class="card-detail" id="card-detail"></div>
+    </div>
+    <div class="card-icon" id="card-icon"></div>
+  </div>
+  <script src="../vendor/three.min.js"></script>
+  <script src="../vendor/OrbitControls.js"></script>
+  <script src="model.js"></script>
+  <script>
+    // ==================== dafeiyu 状态桥接 ====================
+    (function () {
+      const bridge = window.petBridge;
+      if (!bridge) return;
+
+      const card = document.getElementById('status-card');
+      const titleEl = document.getElementById('card-title');
+      const detailEl = document.getElementById('card-detail');
+      const iconEl = document.getElementById('card-icon');
+      let cardTimer = null;
+
+      // 状态样式(与原版 helper.py _status_colors 一致)
+      const STATE_STYLE = {
+        SUCCESS:      { bg: '#D9F7E4', fg: '#12B85A', icon: 'check' },
+        ERROR:        { bg: '#FDE3E3', fg: '#E5484D', icon: 'cross' },
+        WAITING:      { bg: '#FFF0CE', fg: '#D88A00', icon: 'exclaim' },
+        THINKING:     { bg: '#E2ECFF', fg: '#4C78E8', icon: 'dots' },
+        WORKING:      { bg: '#DDEBFF', fg: '#3478F6', icon: 'dots' },
+        DISCONNECTED: { bg: '#ECEEF1', fg: '#7B818A', icon: 'dot' },
+        IDLE:         { bg: '#ECEEF1', fg: '#747A84', icon: 'dot' },
+      };
+      const DEFAULT_STYLE = { bg: '#ECEEF1', fg: '#747A84', icon: 'dot' };
+
+      function renderIcon(kind, fg) {
+        if (kind === 'dots') {
+          iconEl.innerHTML = '<span class="dots" style="color:' + fg + '"><i></i><i></i><i></i></span>';
+        } else if (kind === 'check') {
+          iconEl.innerHTML = '✓';
+        } else if (kind === 'cross') {
+          iconEl.innerHTML = '✕';
+        } else if (kind === 'exclaim') {
+          iconEl.innerHTML = '!';
+        } else {
+          iconEl.innerHTML = '●';
+        }
+      }
+
+      function showCard(state, title, detail, ms) {
+        const st = STATE_STYLE[state] || DEFAULT_STYLE;
+        card.style.background = '#fcfcfd';
+        iconEl.style.background = st.bg;
+        iconEl.style.color = st.fg;
+        titleEl.textContent = title || '';
+        detailEl.textContent = detail || '';
+        renderIcon(st.icon, st.fg);
+        card.classList.add('show');
+        clearTimeout(cardTimer);
+        if (ms) cardTimer = setTimeout(hideCard, ms);
+      }
+      function hideCard() {
+        card.classList.remove('show');
+        clearTimeout(cardTimer);
+      }
+
+      bridge.onState(function (p) {
+        if (!p) return;
+        if (window.__petSetMood) window.__petSetMood(p.mood || 'idle');
+        const title = p.message || p.detail || '';
+        const detail = p.detail || p.task || '';
+        showCard(p.state || 'IDLE', title, detail, 0); // 常驻:状态变化时更新,不自动隐藏
+      });
+
+      bridge.onPulse(function (p) {
+        if (!p) return;
+        if (window.__petSetMood) window.__petSetMood(p.mood || 'idle');
+        const title = p.message || p.detail || '';
+        const detail = p.detail || '';
+        showCard(p.state || 'SUCCESS', title, detail, p.ttlMs || 2000);
+        setTimeout(function () {
+          if (window.__petSetMood) window.__petSetMood(p.resume || 'idle');
+        }, p.ttlMs || 2000);
+      });
+
+      // ---- 拖拽窗口 + 右键菜单 ----
+      const drag = { down: false, sx: 0, sy: 0, moved: false };
+      const rclick = { down: false, sx: 0, sy: 0, moved: false };
+      window.addEventListener('mousedown', function (e) {
+        if (e.button === 0) {
+          drag.down = true; drag.sx = e.screenX; drag.sy = e.screenY; drag.moved = false;
+          bridge.dragStart();
+        } else if (e.button === 2) {
+          rclick.down = true; rclick.sx = e.clientX; rclick.sy = e.clientY; rclick.moved = false;
+        }
+      });
+      window.addEventListener('mousemove', function (e) {
+        if (drag.down) {
+          const dx = e.screenX - drag.sx, dy = e.screenY - drag.sy;
+          if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 6) drag.moved = true;
+          if (drag.moved) bridge.dragMove(dx, dy);
+        }
+        if (rclick.down && Math.abs(e.clientX - rclick.sx) + Math.abs(e.clientY - rclick.sy) > 6) rclick.moved = true;
+      });
+      window.addEventListener('mouseup', function (e) {
+        if (drag.down) {
+          drag.down = false;
+          bridge.dragEnd();
+          if (!drag.moved && window.__petHappy) window.__petHappy();
+        }
+        if (rclick.down) {
+          rclick.down = false;
+          if (!rclick.moved) bridge.contextMenu(e.clientX, e.clientY);
+        }
+      });
+      window.addEventListener('blur', function () {
+        if (drag.down && drag.moved) bridge.dragEnd();
+        drag.down = false; rclick.down = false;
+      });
+
+      bridge.onInit(function (info) {
+        if (info && window.__petSetSleeping) window.__petSetSleeping(false);
+      });
+      bridge.onResetView(function () {
+        if (window.__petResetView) window.__petResetView();
+      });
+    })();
+  </script>
+</body>
+</html>
