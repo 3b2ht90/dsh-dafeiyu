@@ -32,6 +32,20 @@ VS Code、浏览器或文件管理器，也能知道 DSH 当前在思考、修�
   ```
   然后重新启动 DSH 即可。
 
+
+## 🐋 3D 虎鲸模式（本分支新增）
+
+本分支（`feature/3d-whale`）将大肥鱼的 2D 序列帧渲染替换为 **Three.js 3D 虎鲸**：
+
+- 保留原插件全部功能：DSH 会话事件驱动、状态卡、点击拖拽、右键菜单。
+- 3D 虎鲸由 `runtime/electron-helper/` 渲染（Electron + Three.js 程序化建模），
+  通过协议桥（`bridge.mjs`）与原插件 stdin 协议无缝对接。
+- 状态映射：空闲→温和漂浮、思考→缓慢游动、工作→快速游动+甩尾、完成→欢快弹跳、出错→受阻姿态。
+- 交互：左键拖动窗口、右键拖动旋转视角、右键单击菜单（含「重置视角」）。
+- 渲染端自动启用：存在 `runtime/electron-helper/` 即使用 3D 虎鲸；设置环境变量
+  `DSH_DAFEIYU_RENDERER=2d` 可回退到原 2D 大肥鱼。
+
+> 3D 模型与动画代码来自 [elyoncatnecoe/whale-pet](https://github.com/elyoncatnecoe/whale-pet)（MIT 风格的开源虎鲸桌宠），已按 dsh-dafeiyu 协议改造。
 ## 它有什么用？
 
 - **离开 DSH 页面也能看到状态**：大肥鱼始终显示在桌面最上层。
