@@ -657,6 +657,18 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(innerWidth, innerHeight);
             });
+            // 透明窗口 + resizable:false 时 resize 事件可能不触发,轮询兜底
+            {
+                let lastW = innerWidth, lastH = innerHeight;
+                setInterval(() => {
+                    if (innerWidth !== lastW || innerHeight !== lastH) {
+                        lastW = innerWidth; lastH = innerHeight;
+                        camera.aspect = innerWidth / innerHeight;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(innerWidth, innerHeight);
+                    }
+                }, 500);
+            }
             // ==================== 情绪系统 ====================
             // 摆动幅度（身体 roll/yaw/pitch、尾鳍 yaw/pitch、胸鳍）分开调，尾鳍幅度刻意做小以防穿模
             const MOODS = {
