@@ -39,12 +39,15 @@ const scale = Math.min(1.6, Math.max(0.6, Number(process.env.DSH_DAFEIYU_SCALE) 
 const WINDOW_WIDTH = Math.round(238 * scale)
 const WINDOW_HEIGHT = Math.round(260 * scale)
 
-// 气泡宽度比例(0.6~1.0,1.0=满宽);可右键菜单实时调整,或用环境变量 DSH_DAFEIYU_CARD_WIDTH 设默认
-let cardWidth = Math.min(1, Math.max(0.6, Number(process.env.DSH_DAFEIYU_CARD_WIDTH) || 1))
+// 气泡宽度比例(0.6~1.2;1.0=窗口满宽,>1.0 时窗口同步加宽容纳更宽的气泡)
+// 可右键菜单实时调整,或用环境变量 DSH_DAFEIYU_CARD_WIDTH 设默认
+let cardWidth = Math.min(1.2, Math.max(0.6, Number(process.env.DSH_DAFEIYU_CARD_WIDTH) || 1))
 const CARD_WIDTH_OPTIONS = [
   { id: 0.8, label: '80%' },
   { id: 0.9, label: '90%' },
   { id: 1.0, label: '100%' },
+  { id: 1.1, label: '110%' },
+  { id: 1.2, label: '120%' },
 ]
 
 let win = null
@@ -86,7 +89,8 @@ function pushPulse(message) {
 // ---------- stdin 协议桥 ----------
 function createWindow() {
   win = new BrowserWindow({
-    width: WINDOW_WIDTH,
+    // 窗口宽随气泡宽度:>100% 时窗口加宽(气泡伸出窗口边缘的部分被渲染,但窗口仍是透明可见区)
+    width: Math.round(WINDOW_WIDTH * cardWidth),
     height: WINDOW_HEIGHT,
     transparent: true,
     frame: false,
@@ -103,6 +107,24 @@ function createWindow() {
   win.setAlwaysOnTop(true, 'screen-saver')
   win.setMenu(null)
   win.loadFile(path.join(here, 'renderer', 'index.html'))
+}
+
+// 应用气泡宽度:同步窗口宽度(保持水平居中)+ 通知渲染进程
+function applyCardWidth(ratio) {
+  const r = Math.min(1.2, Math.max(0.6, Number(ratio) || 1))
+  cardWidth = r
+  if (win && !win.isDestroyed()) {
+    const bounds = win.getBounds()
+    const newWidth = Math.round(WINDOW_WIDTH * r)
+    if (bounds.width !== newWidth) {
+      const centerX = bounds.x + bounds.width / 2
+      win.setResizable(true) // resizable:false 时 setSize 不生效,临时放开
+      win.setSize(newWidth, bounds.height)
+      win.setPosition(Math.round(centerX - newWidth / 2), bounds.y)
+      win.setResizable(false)
+    }
+  }
+  win?.webContents.send('pet:card-width', r)
 }
 
 // 拖动窗口(修复 Windows 显示缩放棘轮 bug:锁定尺寸 + 相对总位移)
@@ -136,10 +158,7 @@ ipcMain.on('pet:context-menu', (_event, cx, cy) => {
         label: o.label + (cardWidth === o.id ? ' ✓' : ''),
         type: 'radio',
         checked: cardWidth === o.id,
-        click: () => {
-          cardWidth = o.id
-          win?.webContents.send('pet:card-width', cardWidth)
-        },
+        click: () => applyCardWidth(o.id),
       })),
     },
     { type: 'separator' },
