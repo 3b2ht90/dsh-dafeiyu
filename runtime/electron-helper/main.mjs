@@ -39,6 +39,14 @@ const scale = Math.min(1.6, Math.max(0.6, Number(process.env.DSH_DAFEIYU_SCALE) 
 const WINDOW_WIDTH = Math.round(238 * scale)
 const WINDOW_HEIGHT = Math.round(260 * scale)
 
+// 气泡宽度比例(0.6~1.0,1.0=满宽);可右键菜单实时调整,或用环境变量 DSH_DAFEIYU_CARD_WIDTH 设默认
+let cardWidth = Math.min(1, Math.max(0.6, Number(process.env.DSH_DAFEIYU_CARD_WIDTH) || 1))
+const CARD_WIDTH_OPTIONS = [
+  { id: 0.8, label: '80%' },
+  { id: 0.9, label: '90%' },
+  { id: 1.0, label: '100%' },
+]
+
 let win = null
 let dragStartBounds = null
 
@@ -122,6 +130,18 @@ ipcMain.on('pet:context-menu', (_event, cx, cy) => {
     { label: '🖱 右键拖动旋转视角', enabled: false },
     { type: 'separator' },
     { label: '🔄 重置视角', click: () => win?.webContents.send('pet:reset-view') },
+    {
+      label: '📐 气泡宽度',
+      submenu: CARD_WIDTH_OPTIONS.map((o) => ({
+        label: o.label + (cardWidth === o.id ? ' ✓' : ''),
+        type: 'radio',
+        checked: cardWidth === o.id,
+        click: () => {
+          cardWidth = o.id
+          win?.webContents.send('pet:card-width', cardWidth)
+        },
+      })),
+    },
     { type: 'separator' },
     { label: '🗕 最小化', click: () => win?.minimize() },
     { label: '✕ 退出桌宠', click: () => app.quit() },
@@ -150,9 +170,9 @@ function handleMessage(msg) {
 app.whenReady().then(() => {
   createWindow()
 
-  // 窗口加载完成后通知渲染进程
+  // 窗口加载完成后通知渲染进程(含气泡宽度)
   win.webContents.on('did-finish-load', () => {
-    win.webContents.send('pet:init', { scale })
+    win.webContents.send('pet:init', { scale, cardWidth })
   })
 
   // 连接协议桥(bridge.mjs 传入 --bridge=host:port)
