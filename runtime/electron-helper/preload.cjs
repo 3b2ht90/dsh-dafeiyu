@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('petBridge', {
   onPulse: (cb) => ipcRenderer.on('pet:pulse', (_e, payload) => cb(payload)),
   onInit: (cb) => ipcRenderer.on('pet:init', (_e, payload) => cb(payload)),
   onResetView: (cb) => ipcRenderer.on('pet:reset-view', () => cb()),
+  onCardWidth: (cb) => ipcRenderer.on('pet:card-width', (_e, ratio) => cb(ratio)),
 })
