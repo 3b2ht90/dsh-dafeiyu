@@ -11,7 +11,7 @@
   /* ==================== 状态卡片(复刻原版 dafeiyu 气泡) ==================== */
   #status-card {
     position: fixed;
-    top: 0px;
+    top: -6px;          /* 微微伸出窗口顶边,视觉上更贴顶 */
     left: 0px;
     right: 0px;
     height: 92px;
@@ -206,8 +206,20 @@
         drag.down = false; rclick.down = false;
       });
 
+      // ---- 气泡宽度(可手动调整:右键菜单 / 环境变量 DSH_DAFEIYU_CARD_WIDTH) ----
+      function applyCardWidth(ratio) {
+        const r = Math.min(1, Math.max(0.6, Number(ratio) || 1));
+        const margin = Math.round((window.innerWidth * (1 - r)) / 2);
+        card.style.left = margin + 'px';
+        card.style.right = margin + 'px';
+      }
+
       bridge.onInit(function (info) {
         if (info && window.__petSetSleeping) window.__petSetSleeping(false);
+        if (info && typeof info.cardWidth === 'number') applyCardWidth(info.cardWidth);
+      });
+      bridge.onCardWidth(function (ratio) {
+        applyCardWidth(ratio);
       });
       bridge.onResetView(function () {
         if (window.__petResetView) window.__petResetView();
