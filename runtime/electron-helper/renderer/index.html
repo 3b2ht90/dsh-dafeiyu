@@ -207,19 +207,18 @@
       });
 
       // ---- 气泡宽度(可手动调整:右键菜单 / 环境变量 DSH_DAFEIYU_CARD_WIDTH) ----
-      function applyCardWidth(ratio) {
-        const r = Math.min(1.2, Math.max(0.6, Number(ratio) || 1));
-        const margin = Math.round((window.innerWidth * (1 - r)) / 2);
-        card.style.left = margin + 'px';
-        card.style.right = margin + 'px';
+      // 窗口宽度已由主进程设为 238*ratio,卡片始终铺满窗口,避免负边距导致超出被裁剪
+      function applyCardWidth() {
+        card.style.left = '0px';
+        card.style.right = '0px';
       }
 
       bridge.onInit(function (info) {
         if (info && window.__petSetSleeping) window.__petSetSleeping(false);
         if (info && typeof info.cardWidth === 'number') applyCardWidth(info.cardWidth);
       });
-      bridge.onCardWidth(function (ratio) {
-        applyCardWidth(ratio);
+      bridge.onCardWidth(function () {
+        applyCardWidth();
       });
       bridge.onResetView(function () {
         if (window.__petResetView) window.__petResetView();
