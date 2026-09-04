@@ -33,6 +33,13 @@ const darwinBundledHelperPath = resolve(
   'MacOS',
   'dsh-dafeiyu-helper',
 )
+// 3D 渲染端:electron-helper 协议桥(win32 上启用)。协议不变,渲染端换成 3D 虎鲸。
+const electronBridgePath = resolve(here, '..', 'runtime', 'electron-helper', 'bridge.mjs')
+
+function useElectronBridge3D() {
+  if (process.env.DSH_DAFEIYU_RENDERER === '2d') return false
+  return process.platform === 'win32' && existsSync(electronBridgePath)
+}
 const packageVersion = JSON.parse(
   readFileSync(resolve(here, '..', 'package.json'), 'utf8'),
 ).version
@@ -172,6 +179,11 @@ function resolveHelperLaunch({
   cmdExe = defaultCmdExe,
   wslHelperCache = cacheWslBundledHelper,
 }) {
+  // 3D 渲染端优先:协议桥用 DSH 自身 node 运行(stdio 管道可靠);
+  // Electron GUI(3D 虎鲸)由桥内部拉起。pythonEnv 未显式指定时启用。
+  if (useElectronBridge3D() && !pythonEnv) {
+    return { command: process.execPath, args: [electronBridgePath] }
+  }
   if (platform === 'win32' && fileExists(bundledPath)) {
     return { command: bundledPath, args: [] }
   }
