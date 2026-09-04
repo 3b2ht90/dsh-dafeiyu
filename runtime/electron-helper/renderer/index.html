@@ -11,25 +11,24 @@
   /* ==================== 状态卡片(复刻原版 dafeiyu 气泡) ==================== */
   #status-card {
     position: fixed;
-    top: -6px;          /* 微微伸出窗口顶边,视觉上更贴顶 */
+    top: 6px;           /* 完整在窗口内显示,不伸出顶边(伸出会被透明窗口裁剪) */
     left: 0px;
     right: 0px;
-    height: 92px;
+    height: 84px;
     box-sizing: border-box;
     background: #fcfcfd;
     border: 1px solid rgba(218, 221, 226, 0.8);
-    border-radius: 30px;
+    border-radius: 24px;
     box-shadow: 0 4px 14px rgba(17, 24, 39, 0.14), 0 1px 3px rgba(17, 24, 39, 0.10);
     display: flex;
     align-items: center;
     padding: 0 10px 0 18px;
     opacity: 0;
-    transform: translateY(-8px) scale(0.98);
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: opacity 0.22s ease;
     pointer-events: none;
     z-index: 10;
   }
-  #status-card.show { opacity: 1; transform: translateY(0) scale(1); }
+  #status-card.show { opacity: 1; }
 
   #status-card .card-text {
     flex: 1;
