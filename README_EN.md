@@ -1,88 +1,68 @@
 <div align="center">
 
-# DSH BigFish 🐋
+# DSH 3D Orca Desktop Companion 🐋
 
-**A desktop companion that reacts to real DeepSeek Harness activity.**
+**Upgrade the desktop DSH state pet to a 3D orca — a Three.js real-time rendered companion driven by real DeepSeek Harness activity.**
 
-Enabled by DSH, owned by the DSH lifecycle, rendered on the desktop.
+> This branch swaps the 2D sprite renderer for an **Electron + Three.js 3D orca** on top of the dafeiyu plugin; DSH state sensing and the companion protocol are unchanged.
 
-[中文](README.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [Latest release](https://github.com/QCYTSN/dsh-dafeiyu/releases) · [Changelog](CHANGELOG.md) · [Update and rollback](docs/UPDATING.md) · [Acceptance notes](docs/ACCEPTANCE.md)
+Enabled by DSH, owned by the DSH lifecycle, rendered on the desktop — now as a **3D orca** that breathes, swims, blinks and flicks its tail.
+
+[中文](README.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [Latest release](https://github.com/QCYTSN/dsh-dafeiyu/releases) · [Changelog](CHANGELOG.md) · [Update and rollback](docs/UPDATING.md)
 
 [![npm](https://img.shields.io/npm/v/dsh-dafeiyu?label=npm)](https://www.npmjs.com/package/dsh-dafeiyu) · [![GitHub Release](https://img.shields.io/github/v/release/QCYTSN/dsh-dafeiyu?label=GitHub%20Release)](https://github.com/QCYTSN/dsh-dafeiyu/releases)
 
 </div>
 
-![DSH BigFish showing live project status](docs/images/dsh-bigfish-running.png)
+## 3D orca preview
 
-DSH BigFish is not a standalone desktop-pet application. DSH enables the plugin, starts and
-stops its native Helper, and provides the Agent events that drive it. The transparent,
-frameless companion stays above other desktop apps, so you can see whether DSH is thinking,
-editing, testing, waiting, or finished while working in VS Code, a browser, or File Explorer.
+A desktop **3D orca** modeled procedurally with Three.js (body / tail fin / dorsal fin / pectoral fins / eye patches), with gentle swimming, breathing, blinking and tail-flick animation. Model source: the open-source [whale-pet](https://github.com/elyoncatnecoe/whale-pet) project.
 
-> Current version: `0.1.7` · Windows / WSL2 / Linux x64 · experimental macOS support
+**The 3D orca while DSH is working**(status card shows the current task):
 
-## Follow updates
+![working](docs/images/whale-3d-working.png)
 
-- The latest version always matches npm [`latest`](https://www.npmjs.com/package/dsh-dafeiyu) and [GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases) (which also carry the `.tgz` archives); the badges above update automatically.
-- **Starring is just a bookmark — GitHub will not notify you of updates.** To get notified about what changed:
-    1. Open the repo and choose **Watch → Custom → Releases**;
-    2. or subscribe to the Releases feed: <https://github.com/QCYTSN/dsh-dafeiyu/releases.atom>
-- To upgrade an installed copy: fully exit DSH, then run
-  ```powershell
-  dsh plugin --profile web update dsh-dafeiyu
-  ```
-  and start DSH again.
+**Three states side by side** — idle / thinking / working:
+
+| Idle (IDLE) | Thinking (THINKING) | Working (WORKING) |
+| --- | --- | --- |
+| ![idle](docs/images/whale-3d-idle.gif) | ![thinking](docs/images/whale-3d-thinking.gif) | ![working](docs/images/whale-3d-working.gif) |
+
+**Status card**(ported from the original dafeiyu style): thinking dots, success check, error cross, waiting exclamation — two-line title + detail.
+
+## Animation & interaction
+
+- **Mood state machine**: DSH idle → gentle floating + breathing; thinking → slow swimming + blue dots; working → fast swimming + stronger tail flicks; done → happy bounce; error → blocked pose.
+- **Mouse rotate**: hold the **right button and drag** to spin the 3D orca 360° (right-click menu resets the view).
+- **Window drag**: hold the **left button** to move the pet; position is remembered.
+- **Status card**: shows the current DSH task phase and real progress ("2/5 steps done · fix login bug").
+- **Card width**: adjust 80%–120% from the right-click menu.
 
 ## What is it for?
 
-- **See DSH status away from the WebUI:** BigFish stays on top of the desktop.
-- **React to real Agent events:** it does not inspect the screen or mistake activity in other apps for DSH work.
-- **Show the effective reasoning effort:** when DSH reports the effort actually applied to a request, the status detail keeps it visible instead of guessing from the model name.
-- **Show useful, compact context:** the card can display the project, current phase, active step, and real todo progress.
-- **Feel alive without becoming noisy:** thinking, searching, editing, commands, testing, waiting, success, and errors have distinct motion and friendly copy.
-- **Avoid a second app experience:** users do not launch the Helper, install Python, or configure another port.
-
-If DSH has not emitted a structured todo list, BigFish shows reliable phases such as
-“Analysis,” “Implementation,” or “Verification” instead of inventing a percentage.
+- **See DSH status away from the WebUI:** the 3D orca stays on top of the desktop.
+- **Feedback from real Agent events:** no screen reading, no misreading your actions in other apps as DSH work.
+- **Real reasoning effort:** the status card shows the actual reasoning effort DSH used when provided.
+- **Enough, not too much info:** project name, current phase, running steps and real todo progress on the card.
+- **Alive but unobtrusive:** thinking, searching, editing, executing, verifying, waiting, done and error all have matching poses and copy.
+- **3D yet restrained:** transparent frameless always-on-top window, default deep-blue skin, starts/stops with DSH, no second app entry.
 
 ## Status previews
 
 | Thinking | Working |
 | --- | --- |
-| ![BigFish thinking](docs/images/status-thinking.png) | ![BigFish working](docs/images/status-working.png) |
+| ![Thinking](docs/images/whale-3d-thinking.png) | ![Working](docs/images/whale-3d-working.png) |
 
-| Waiting for you | Complete |
-| --- | --- |
-| ![BigFish waiting for user confirmation](docs/images/status-waiting.png) | ![BigFish task complete](docs/images/status-success.png) |
-
-| Needs attention |
+| Idle |
 | --- |
-| ![BigFish error status](docs/images/status-error.png) |
+| ![Idle](docs/images/whale-3d-idle.png) |
 
-The high-level state flow is:
+## Renderer notes (new in this branch)
 
-```mermaid
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> Thinking: DSH starts a turn
-    Thinking --> Working: search, read, edit, command, or test
-    Working --> Thinking: organize tool results
-    Thinking --> Waiting: user confirmation required
-    Working --> Waiting: user confirmation required
-    Thinking --> Success: turn completed
-    Working --> Success: turn completed
-    Thinking --> Error: turn ended abnormally
-    Working --> Error: tool or turn failed
-    Waiting --> Thinking: user continues
-    Error --> Thinking: user retries
-    Success --> Idle
-```
-
-When several DSH sessions run at once, the default attention priority is:
-
-`Waiting > Error > Working > Thinking > Idle`
-
-When multiple tasks are active, the status bubble lists them at the same time.
+- Renderer lives in `runtime/electron-helper/`: Electron GUI main + the Three.js 3D orca model in a transparent frameless always-on-top window.
+- On the plugin side, `src/helper-process.js` starts the protocol bridge `bridge.mjs` (pure Node) on win32, driving the GUI over a loopback TCP socket; DSH state sensing (session events → reducer → companion protocol) is unchanged.
+- **Switch back to the original 2D renderer:** set `DSH_DAFEIYU_RENDERER=2d`, or delete `runtime/electron-helper`, to fall back to the original 2D Python/Qt Helper.
+- The 3D renderer needs a usable Electron (model and vendor scripts are bundled; nothing extra to install).
 
 ## Requirements
 
@@ -176,7 +156,7 @@ extract it) and install it:
 pnpm dsh plugin --profile web add ~/Downloads/dsh-dafeiyu-<version>.tgz
 ```
 
-Then launch DSH WebUI normally; BigFish is started automatically. Do not start
+Then launch DSH WebUI normally; the 3D orca is started automatically. Do not start
 the Helper yourself.
 
 ### macOS users (Apple Silicon / Intel, macOS 12.0+)
@@ -219,7 +199,7 @@ extract it) and install it:
 pnpm dsh plugin --profile web add ~/Downloads/dsh-dafeiyu-<version>.tgz
 ```
 
-Then launch DSH WebUI normally; BigFish is started automatically. Do not start
+Then launch DSH WebUI normally; the 3D orca is started automatically. Do not start
 the Helper yourself.
 
 #### About macOS Gatekeeper
@@ -265,7 +245,7 @@ pnpm dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.
 
 ### 4. Start DSH
 
-Launch the DSH WebUI normally. The plugin is enabled by default, and DSH starts BigFish
+Launch the DSH WebUI normally. The plugin is enabled by default, and DSH starts the 3D orca
 automatically. Do not start the Helper yourself.
 
 ### 5. Open the settings
@@ -284,9 +264,9 @@ There is no separate workflow after installation:
 
 1. Start DSH.
 2. Begin a project task in DSH.
-3. BigFish reacts to real DSH events and updates its animation and status card.
-4. Switch to another app; BigFish remains above the desktop.
-5. BigFish exits automatically when the DSH Host actually stops.
+3. The 3D orca reacts to real DSH events and updates its animation and status card.
+4. Switch to another app; the 3D orca remains above the desktop.
+5. The 3D orca exits automatically when the DSH Host actually stops.
 
 The status card can show:
 
@@ -296,27 +276,27 @@ The status card can show:
 - real progress, such as “3/5 steps complete”
 - waiting, success, or error messages
 
-BigFish does not watch VS Code, browsers, or other apps and does not take screenshots. Only
+The 3D orca does not watch VS Code, browsers, or other apps and does not take screenshots. Only
 DSH Agent events can change its work state.
 
 ## Settings
 
 | Setting | Purpose |
 | --- | --- |
-| Enable BigFish | Show or stop the desktop companion immediately |
+| Enable companion | Show or stop the desktop companion immediately |
 | Character size | Scale the character from 55% to 140%; the context menu includes a 60% mini preset |
 | Bubble size | Scale the status bubble from 80% to 120% while keeping status text readable |
 | Bubble visibility | Always show, hide completely, or choose which states show the bubble |
 | Activity level | Control the frequency of idle blinks and micro-animations |
 | Reduced motion | Reduce walking, looping frames, and procedural movement |
-| Notification sound | Play or mute BigFish's original sound when a task succeeds or fails |
+| Notification sound | Play or mute the companion sound when a task succeeds or fails |
 | Include subagents | Allow subagent sessions to participate in status priority; off by default |
 
 DSH persists these settings, so a normal plugin update does not require reconfiguration.
 
 ## Desktop interactions
 
-- **Drag:** move BigFish; its position is saved automatically. Releasing it plays brief release, dizzy, and protest reactions, skipped automatically when reduced motion is enabled.
+- **Drag:** move the 3D orca with the left button; its position is saved automatically. Releasing it plays brief release, dizzy, and protest reactions, skipped automatically when reduced motion is enabled.
 - **Click or double-click:** trigger brief head-pat, poke, or tail reactions, then return to the latest DSH state.
 - **Right-click:** change size, bubble size, reduce motion, open WebUI, hide for now, or close for this run.
 - **Hide for now:** hides the window without disabling the plugin.
@@ -374,7 +354,7 @@ an inactive copy of historical settings; it does not start a process or open a p
 ## Troubleshooting
 
 <details>
-<summary><strong>BigFish does not appear after installation</strong></summary>
+<summary><strong>The 3D orca does not appear after installation</strong></summary>
 
 1. Confirm that you installed into `--profile web`.
 2. Fully stop and restart the DSH Host.
@@ -386,9 +366,9 @@ an inactive copy of historical settings; it does not start a process or open a p
 </details>
 
 <details>
-<summary><strong>Why does BigFish remain after I close the DSH browser tab?</strong></summary>
+<summary><strong>Why does the 3D orca remain after I close the DSH browser tab?</strong></summary>
 
-BigFish follows the DSH Host lifecycle, not the browser tab. It remains visible while the DSH
+The 3D orca follows the DSH Host lifecycle, not the browser tab. It remains visible while the DSH
 backend is still alive and exits when the Host actually stops.
 
 </details>
@@ -402,10 +382,10 @@ Without real progress data, the card shows the current phase instead of inventin
 </details>
 
 <details>
-<summary><strong>Why does BigFish not restart after “Close for this run”?</strong></summary>
+<summary><strong>Why does the 3D orca not restart after “Close for this run”?</strong></summary>
 
 That command intentionally suppresses automatic restart for the current DSH run. Fully restart
-DSH to bring it back. To disable it permanently, turn off “Enable BigFish” in DSH settings.
+DSH to bring it back. To disable it permanently, turn off “Enable companion” in DSH settings.
 
 </details>
 
