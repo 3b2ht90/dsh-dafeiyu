@@ -1,87 +1,68 @@
 <div align="center">
 
-# DSH 大肥鱼 🐋
+# DSH 3D 虎鲸桌面伴侣 🐋
 
-**住在桌面上、由 DeepSeek Harness 真实工作状态驱动的 Agent 伴侣。**
+**把桌面上的 DSH 状态精灵升级为 3D 虎鲸——由 DeepSeek Harness 真实工作状态驱动的 Three.js 实时渲染桌宠。**
 
-入口属于 DSH，生命周期属于 DSH，显示层属于桌面。
+> 本分支在 dafeiyu 插件基础上,把 2D 精灵渲染层替换为 **Electron + Three.js 3D 虎鲸**,DSH 状态感知与协议完全不变。
 
-[English](README_EN.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [下载最新版本](https://github.com/QCYTSN/dsh-dafeiyu/releases) · [更新日志](CHANGELOG.md) · [更新与回退](docs/UPDATING.md) · [验收记录](docs/ACCEPTANCE.md)
+入口属于 DSH，生命周期属于 DSH，显示层属于桌面——现在这只桌面伙伴是一条会呼吸、会游动、会甩尾的 **3D 虎鲸**。
+
+[English](README_EN.md) · [npm](https://www.npmjs.com/package/dsh-dafeiyu) · [下载最新版本](https://github.com/QCYTSN/dsh-dafeiyu/releases) · [更新日志](CHANGELOG.md) · [更新与回退](docs/UPDATING.md)
 
 [![npm](https://img.shields.io/npm/v/dsh-dafeiyu?label=npm)](https://www.npmjs.com/package/dsh-dafeiyu) · [![GitHub Release](https://img.shields.io/github/v/release/QCYTSN/dsh-dafeiyu?label=GitHub%20Release)](https://github.com/QCYTSN/dsh-dafeiyu/releases)
 
 </div>
 
-![DSH 大肥鱼在真实任务中显示项目状态](docs/images/dsh-bigfish-running.png)
+## 3D 虎鲸效果
 
-DSH 大肥鱼不是一个需要单独启动的桌宠应用。它由 DSH 插件启用，跟随 DSH
-一起启动和退出，并以透明、无边框、始终置顶的原生窗口显示在桌面上。即使切换到
-VS Code、浏览器或文件管理器，也能知道 DSH 当前在思考、修改、测试、等待还是已经完成。
+一只常驻桌面的 **3D 虎鲸**,由 Three.js 程序化建模(身体 / 尾鳍 / 背鳍 / 胸鳍 / 眼斑),带温和游动、呼吸起伏、眨眼与甩尾动画。模型来源:开源项目 [whale-pet](https://github.com/elyoncatnecoe/whale-pet)。
 
-> 当前版本：`0.1.7` · Windows / WSL2 / Linux x64 · macOS 实验性支持
+**工作状态中的 3D 虎鲸**(状态卡片显示当前任务):
 
-## 关注最新进展
+![working](docs/images/whale-3d-working.png)
 
-- 最新版本永远以 [npm `latest`](https://www.npmjs.com/package/dsh-dafeiyu) 和 [GitHub Releases](https://github.com/QCYTSN/dsh-dafeiyu/releases) 为准（Releases 里同时提供 `.tgz` 安装包）；顶部的版本徽章会自动更新。
-- 给仓库 **Star 只是收藏，不会收到更新通知**。想第一时间知道「更新了什么」：
-    1. 打开仓库点 **Watch → Custom → Releases**，只订阅 Release 通知；
-    2. 或直接订阅 Releases 的 feed：<https://github.com/QCYTSN/dsh-dafeiyu/releases.atom>
-- 已安装用户升级：完全退出 DSH 后执行
-  ```powershell
-  dsh plugin --profile web update dsh-dafeiyu
-  ```
-  然后重新启动 DSH 即可。
+**三种状态对比** —— 空闲 / 思考中 / 工作中:
+
+| 空闲 (IDLE) | 思考中 (THINKING) | 工作中 (WORKING) |
+| --- | --- | --- |
+| ![idle](docs/images/whale-3d-idle.gif) | ![thinking](docs/images/whale-3d-thinking.gif) | ![working](docs/images/whale-3d-working.gif) |
+
+**状态卡片**(复刻 dafeiyu 原版样式):思考三点动画、成功勾、出错叉、等待感叹号,标题 + 详情双行展示。
+
+## 动画与互动
+
+- **情绪状态机**:DSH 空闲 → 温和漂浮呼吸;思考 → 缓慢游动 + 蓝点跳动;工作 → 快速游动 + 甩尾加剧;完成 → 欢快弹跳;出错 → 受阻姿态。
+- **鼠标旋转**:右键按住拖动即可 360° 旋转观察 3D 虎鲸(右键菜单可重置视角)。
+- **窗口拖动**:左键按住拖动移动桌宠,位置自动保存。
+- **状态气泡**:显示当前 DSH 任务阶段与真实进度("已完成 2/5 步 · 修复登录 bug")。
+- **气泡宽度**:右键菜单实时调节 80%–120%。
 
 ## 它有什么用？
 
-- **离开 DSH 页面也能看到状态**：大肥鱼始终显示在桌面最上层。
-- **反馈来自真实 Agent 事件**：不会读取屏幕，也不会把你在其他软件里的操作误判为 DSH 工作。
-- **显示真实推理强度**：当 DSH 提供请求实际采用的 reasoning effort 时，状态详情会持续显示该值，不会根据模型名称自行猜测。
-- **展示足够但不过量的信息**：项目名、当前阶段、正在进行的步骤和真实待办进度会显示在状态卡上。
-- **有生命力但不打扰**：思考、查找、修改、执行、验证、等待、完成和错误都有对应动作与自然文案。
-- **没有第二套应用入口**：无需单独运行 Helper、安装 Python或配置额外端口。
-
-如果 DSH 没有提供待办清单，大肥鱼只显示“分析阶段”“实现阶段”“验证阶段”等可靠信息，
-不会编造完成百分比。
+- **离开 DSH 页面也能看到状态**:3D 虎鲸始终显示在桌面最上层。
+- **反馈来自真实 Agent 事件**:不读取屏幕,也不会把你其他软件里的操作误判为 DSH 工作。
+- **显示真实推理强度**:DSH 提供 reasoning effort 时状态气泡持续显示该值。
+- **展示足够但不过量的信息**:项目名、阶段、当前步骤和真实待办进度显示在状态卡上。
+- **有生命力但不打扰**:思考、查找、修改、执行、验证、等待、完成和错误都有对应动作与自然文案。
+- **3D 但克制**:透明无框置顶窗口,默认深寻蓝配色,随 DSH 一起启停,无第二套应用入口。
 
 ## 状态展示
 
 | 思考 | 工作 |
 | --- | --- |
-| ![大肥鱼思考状态](docs/images/status-thinking.png) | ![大肥鱼工作状态](docs/images/status-working.png) |
+| ![思考](docs/images/whale-3d-thinking.png) | ![工作](docs/images/whale-3d-working.png) |
 
-| 等待确认 | 完成 |
-| --- | --- |
-| ![大肥鱼等待用户确认](docs/images/status-waiting.png) | ![大肥鱼任务完成](docs/images/status-success.png) |
-
-| 遇到问题 |
+| 空闲 |
 | --- |
-| ![大肥鱼错误状态](docs/images/status-error.png) |
+| ![空闲](docs/images/whale-3d-idle.png) |
 
-状态大致按照下面的流程变化：
+## 渲染层说明(本分支新增)
 
-```mermaid
-stateDiagram-v2
-    [*] --> 空闲
-    空闲 --> 思考: DSH 开始一轮任务
-    思考 --> 工作: 搜索、读取、修改、执行或测试
-    工作 --> 思考: 整理工具结果
-    思考 --> 等待: 需要用户确认
-    工作 --> 等待: 需要用户确认
-    思考 --> 完成: 本轮任务完成
-    工作 --> 完成: 本轮任务完成
-    思考 --> 错误: 任务异常结束
-    工作 --> 错误: 工具或任务失败
-    等待 --> 思考: 用户继续任务
-    错误 --> 思考: 用户重试
-    完成 --> 空闲
-```
-
-多个 DSH Session 同时运行时，默认优先展示最需要注意的顶层任务：
-
-`等待确认 > 错误 > 工作 > 思考 > 空闲`
-
-当有多个活动任务时，状态气泡会同时列出这些任务的状态。
+- 渲染端位于 `runtime/electron-helper/`:Electron GUI 主进程 + Three.js 3D 虎鲸模型,透明无框置顶小窗口。
+- 插件侧 `src/helper-process.js` 在 win32 上优先启动协议桥 `bridge.mjs`(纯 Node),经回环 TCP 驱动 GUI;DSH 状态感知(会话事件 → reducer → companion 协议)完全不变。
+- **切回原 2D 渲染**:设置环境变量 `DSH_DAFEIYU_RENDERER=2d`,或删除 `runtime/electron-helper` 目录,即回退到 dafeiyu 原版 2D Python/Qt Helper。
+- 3D 渲染端需要可用的 Electron(模型与 vendor 脚本已内置,无需额外安装)。
 
 ## 系统要求
 
@@ -91,6 +72,8 @@ stateDiagram-v2
 - 已安装并能正常运行的 DeepSeek Harness WebUI
 - DSH CLI 中可以使用 `plugin --profile web` 命令
 - npm 上的稳定版 `dsh-dafeiyu`（或抢先测试的 `dsh-dafeiyu@alpha`），或 GitHub Release 中的 `.tgz` 安装包
+
+> **3D 虎鲸渲染要求**:本分支的 3D 渲染端目前仅支持 **Windows x64**(需可用 Electron)。Linux / WSL2 / macOS 上自动回退到原 2D Python/Qt Helper,DSH 状态感知不受影响。
 
 普通用户**不需要**安装 Python、PySide6 或单独运行 Helper。Windows、Linux
 x64 和 macOS 的 Helper 都已经包含在发布包里。
@@ -166,7 +149,7 @@ pnpm dsh plugin --profile web add dsh-dafeiyu
 pnpm dsh plugin --profile web add ~/Downloads/dsh-dafeiyu-<version>.tgz
 ```
 
-装完照常启动 DSH WebUI，大肥鱼会由 DSH 自动拉起；不需要手动打开 Helper。
+装完照常启动 DSH WebUI，3D 虎鲸会由 DSH 自动拉起；不需要手动打开 Helper。
 
 ### macOS 用户（Apple Silicon / Intel，macOS 12.0+）
 
@@ -203,7 +186,7 @@ dsh plugin --profile web add dsh-dafeiyu
 pnpm dsh plugin --profile web add ~/Downloads/dsh-dafeiyu-<version>.tgz
 ```
 
-装完照常启动 DSH WebUI，大肥鱼会由 DSH 自动拉起；不要手动打开 Helper。
+装完照常启动 DSH WebUI，3D 虎鲸会由 DSH 自动拉起；不要手动打开 Helper。
 
 #### 关于 macOS Gatekeeper
 
@@ -247,7 +230,7 @@ pnpm dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.
 
 ### 4. 启动 DSH
 
-照常启动 DSH WebUI。插件默认启用，大肥鱼会由 DSH 自动拉起；不要手动打开 Helper。
+照常启动 DSH WebUI。插件默认启用，3D 虎鲸会由 DSH 自动拉起；不要手动打开 Helper。
 
 ### 5. 找到设置入口
 
@@ -265,9 +248,9 @@ pnpm dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.
 
 1. 启动 DSH。
 2. 在 DSH 中开始一个项目任务。
-3. 大肥鱼根据 DSH 的真实事件切换动作和状态卡。
-4. 切换到其他窗口继续工作；大肥鱼仍然保持在桌面最上层。
-5. DSH Host 真正退出后，大肥鱼自动退出。
+3. 3D 虎鲸根据 DSH 的真实事件切换动作和状态卡。
+4. 切换到其他窗口继续工作；3D 虎鲸仍然保持在桌面最上层。
+5. DSH Host 真正退出后，3D 虎鲸自动退出。
 
 状态卡可能显示：
 
@@ -277,7 +260,7 @@ pnpm dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.
 - 真实进度，例如“已完成 3/5 步”
 - 等待、完成或错误提示
 
-大肥鱼不会监听 VS Code、浏览器或其他应用，也不会截图。只有 DSH Agent 的事件能够
+3D 虎鲸不会监听 VS Code、浏览器或其他应用，也不会截图。只有 DSH Agent 的事件能够
 改变它的工作状态。
 
 ## 可配置项目
@@ -290,14 +273,14 @@ pnpm dsh plugin --profile web add "C:\Users\you\Downloads\dsh-dafeiyu-<version>.
 | 气泡显示 | 常驻显示、完全隐藏，或自定义哪些状态显示气泡 |
 | 活跃程度 | 控制空闲时眨眼、观察等微动作频率 |
 | 减少动态效果 | 减少走动、循环帧和程序化晃动 |
-| 提示音 | 控制任务完成或出错时的大肥鱼提示音 |
+| 提示音 | 控制任务完成或出错时的提示音 |
 | 响应子 Agent | 允许子 Agent 状态参与优先级选择；默认关闭 |
 
 设置由 DSH 保存，更新插件后通常不需要重新配置。
 
 ## 桌面互动
 
-- **拖动**：按住大肥鱼移动位置，位置会自动保存；松手后会依次出现弹开、晕乎和抗议的短反馈，开启“减少动态”时自动跳过。
+- **拖动**：左键按住 3D 虎鲸移动位置，位置会自动保存；松手后会依次出现弹开、晕乎和抗议的短反馈，开启“减少动态”时自动跳过。
 - **点击或双击**：触发摸头、戳一下、尾巴等短互动，之后恢复最新 DSH 状态。
 - **右键菜单**：调整大小、气泡大小、减少动态、打开 WebUI、本次隐藏或本次关闭。
 - **本次隐藏**：只隐藏窗口，不禁用插件。
@@ -354,7 +337,7 @@ pnpm dsh plugin --profile web remove dsh-dafeiyu
 ## 常见问题
 
 <details>
-<summary><strong>安装后没有看到大肥鱼</strong></summary>
+<summary><strong>安装后没有看到 3D 虎鲸</strong></summary>
 
 1. 确认安装使用的是 `--profile web`。
 2. 完全退出并重新启动 DSH Host。
@@ -366,10 +349,10 @@ pnpm dsh plugin --profile web remove dsh-dafeiyu
 </details>
 
 <details>
-<summary><strong>关闭了 DSH 网页，为什么大肥鱼还在？</strong></summary>
+<summary><strong>关闭了 DSH 网页，为什么 3D 虎鲸还在？</strong></summary>
 
-大肥鱼绑定的是 DSH Host 生命周期，而不是浏览器标签页。只要 DSH 后台仍在运行，
-大肥鱼就会继续显示；真正退出 DSH Host 后它会自动关闭。
+3D 虎鲸绑定的是 DSH Host 生命周期，而不是浏览器标签页。只要 DSH 后台仍在运行，
+3D 虎鲸就会继续显示；真正退出 DSH Host 后它会自动关闭。
 
 </details>
 
